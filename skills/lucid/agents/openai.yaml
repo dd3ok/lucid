@@ -1,0 +1,4 @@
+display_name: Lucid
+short_description: Audit and plan cleanup for stale, unsafe, or obsolete agent-facing context.
+default_prompt: Audit this repository for prompt debt and create a Lucid cleanup plan.
+

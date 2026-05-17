@@ -1,0 +1,13 @@
+{
+  "name": "always-loaded-bloat",
+  "fixture": "fixtures/always-loaded-bloat",
+  "expected_findings": [
+    {
+      "rule": "always-loaded-bloat",
+      "path": "AGENTS.md",
+      "suggested_action": "move-to-reference"
+    }
+  ],
+  "forbidden_findings": []
+}
+

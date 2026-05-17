@@ -1,0 +1,13 @@
+{
+  "name": "stale-context",
+  "fixture": "fixtures/stale-context",
+  "expected_findings": [
+    {
+      "rule": "stale-context",
+      "path": "AGENTS.md",
+      "suggested_action": "manual-review"
+    }
+  ],
+  "forbidden_findings": []
+}
+

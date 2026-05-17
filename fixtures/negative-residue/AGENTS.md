@@ -1,0 +1,4 @@
+# AGENTS.md
+
+Do not use OLD_CONTEXT_PIPELINE.
+

@@ -1,0 +1,13 @@
+{
+  "name": "archive-autoload",
+  "fixture": "fixtures/archive-autoload",
+  "expected_findings": [
+    {
+      "rule": "archive-autoload",
+      "path": "AGENTS.md",
+      "suggested_action": "remove"
+    }
+  ],
+  "forbidden_findings": []
+}
+

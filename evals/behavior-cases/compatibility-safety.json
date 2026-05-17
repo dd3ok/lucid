@@ -1,0 +1,18 @@
+{
+  "name": "compatibility-safety",
+  "fixture": "fixtures/compatibility-safety",
+  "expected_findings": [
+    {
+      "rule": "compatibility-risk",
+      "path": "AGENTS.md",
+      "suggested_action": "keep-with-reason"
+    }
+  ],
+  "forbidden_findings": [
+    {
+      "rule": "obsolete-identifier",
+      "path": "AGENTS.md"
+    }
+  ]
+}
+

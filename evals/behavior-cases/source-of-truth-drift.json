@@ -1,0 +1,13 @@
+{
+  "name": "source-of-truth-drift",
+  "fixture": "fixtures/source-of-truth-drift",
+  "expected_findings": [
+    {
+      "rule": "source-of-truth-drift",
+      "path": "README.md",
+      "suggested_action": "replace-with-pointer"
+    }
+  ],
+  "forbidden_findings": []
+}
+

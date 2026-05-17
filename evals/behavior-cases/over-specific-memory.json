@@ -1,0 +1,13 @@
+{
+  "name": "over-specific-memory",
+  "fixture": "fixtures/over-specific-memory",
+  "expected_findings": [
+    {
+      "rule": "over-specific-memory",
+      "path": "memory.md",
+      "suggested_action": "manual-review"
+    }
+  ],
+  "forbidden_findings": []
+}
+

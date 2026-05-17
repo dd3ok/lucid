@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "thresholds": {
+    "always_loaded_max_lines": 4
+  }
+}
+

@@ -1,0 +1,13 @@
+{
+  "name": "stale-reference",
+  "fixture": "fixtures/stale-reference",
+  "expected_findings": [
+    {
+      "rule": "stale-reference",
+      "path": "README.md",
+      "suggested_action": "manual-review"
+    }
+  ],
+  "forbidden_findings": []
+}
+

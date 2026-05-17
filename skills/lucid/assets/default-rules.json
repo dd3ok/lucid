@@ -1,0 +1,24 @@
+{
+  "rules": [
+    "stale-context",
+    "over-specific-memory",
+    "obsolete-identifier",
+    "negative-residue",
+    "source-of-truth-drift",
+    "always-loaded-bloat",
+    "stale-reference",
+    "archive-autoload",
+    "compatibility-risk",
+    "unsafe-context"
+  ],
+  "actions": [
+    "remove",
+    "replace-with-pointer",
+    "move-to-reference",
+    "move-to-validator",
+    "move-to-eval",
+    "keep-with-reason",
+    "manual-review"
+  ]
+}
+

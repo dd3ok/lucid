@@ -1,0 +1,19 @@
+{
+  "name": "negative-residue",
+  "fixture": "fixtures/negative-residue",
+  "expected_findings": [
+    {
+      "rule": "negative-residue",
+      "path": "AGENTS.md",
+      "suggested_action": "replace-with-pointer"
+    }
+  ],
+  "forbidden_findings": [
+    {
+      "rule": "compatibility-risk",
+      "path": "AGENTS.md"
+    }
+  ],
+  "notes": "Obsolete concepts should not remain in user-facing context as warnings."
+}
+

@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "surfaces": {
+    "always_loaded": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      "MEMORY.md",
+      "memory.md",
+      "SOUL.md",
+      "identity.md",
+      ".cursorrules",
+      ".github/copilot-instructions.md"
+    ],
+    "skill": [
+      "skills/*/SKILL.md",
+      "skills/*/references/**/*.md",
+      "skills/*/examples/**/*.md",
+      "skills/*/evals/**/*.md"
+    ],
+    "docs": [
+      "README.md",
+      "docs/**/*.md",
+      "prompts/**/*.md",
+      "templates/**/*.md",
+      "examples/**/*.md"
+    ]
+  },
+  "thresholds": {
+    "always_loaded_max_lines": 120,
+    "skill_md_max_lines": 120,
+    "reference_max_lines": 500,
+    "duplicate_similarity_min": 0.82
+  },
+  "rules": {
+    "stale_context": true,
+    "over_specific_memory": true,
+    "obsolete_identifier": true,
+    "negative_residue": true,
+    "source_of_truth_drift": true,
+    "always_loaded_bloat": true,
+    "stale_reference": true,
+    "archive_autoload": true,
+    "compatibility_risk": true,
+    "unsafe_context": true
+  },
+  "obsolete_identifiers": {
+    "allow_in": [
+      "fixtures/**",
+      "evals/**",
+      "skills/lucid/assets/default-rules.json"
+    ],
+    "deny_in": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      "README.md",
+      "skills/*/SKILL.md"
+    ],
+    "terms": []
+  },
+  "compatibility_protected_patterns": [
+    "schema",
+    "migration",
+    "compat",
+    "legacy_alias",
+    "api_version",
+    "protocol",
+    "backward-compatible"
+  ],
+  "write_policy": {
+    "allowed_output_dir": ".lucid",
+    "auto_apply": false,
+    "allow_network": false,
+    "allow_env_read": false
+  }
+}
+
