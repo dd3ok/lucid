@@ -50,23 +50,22 @@ def validate_openai_yaml() -> None:
     if not OPENAI_YAML.exists():
         fail("skills/lucid/agents/openai.yaml is missing")
     lines = OPENAI_YAML.read_text(encoding="utf-8").splitlines()
-    flat_keys = {"display_name", "short_description", "default_prompt"}
-    for line in lines:
-        if not line.startswith(" ") and ":" in line:
-            key = line.split(":", 1)[0]
-            if key in flat_keys:
-                fail(f"agents/openai.yaml has flat {key}; use interface.{key}")
-    if not any(line == "interface:" for line in lines):
-        fail("agents/openai.yaml must define interface metadata")
     required = {
         "display_name",
         "short_description",
         "default_prompt",
     }
+    for line in lines:
+        if not line.startswith(" ") and ":" in line:
+            key = line.split(":", 1)[0].strip()
+            if key in required:
+                fail(f"agents/openai.yaml has flat {key}; use interface.{key}")
+    if not any(line.rstrip() == "interface:" for line in lines):
+        fail("agents/openai.yaml must define interface metadata")
     values: dict[str, str] = {}
     inside_interface = False
     for line in lines:
-        if line == "interface:":
+        if line.rstrip() == "interface:":
             inside_interface = True
             continue
         if inside_interface:
@@ -76,6 +75,7 @@ def validate_openai_yaml() -> None:
             stripped = line.strip()
             if ":" in stripped:
                 key, raw_value = stripped.split(":", 1)
+                key = key.strip()
                 if key in required:
                     raw_value = raw_value.strip()
                     if not (
@@ -83,8 +83,8 @@ def validate_openai_yaml() -> None:
                         and raw_value.startswith('"')
                         and raw_value.endswith('"')
                     ):
-                        fail(f"agents/openai.yaml interface.{key} must be quoted")
-                    values[key] = raw_value.strip('"')
+                        fail(f"agents/openai.yaml interface.{key} must be double-quoted")
+                    values[key] = raw_value[1:-1]
     missing = sorted(required - values.keys())
     if missing:
         fail(f"agents/openai.yaml missing interface fields: {', '.join(missing)}")
