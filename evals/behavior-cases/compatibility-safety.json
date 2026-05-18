@@ -13,6 +13,12 @@
       "rule": "obsolete-identifier",
       "path": "AGENTS.md"
     }
+  ],
+  "expected_plan_contains": [
+    "Compatibility note:",
+    "Why it looks stale:",
+    "Why it may still be required:",
+    "Evidence needed before removal:"
   ]
 }
 

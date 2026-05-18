@@ -1,6 +1,6 @@
 {
-  "name": "unsafe-context",
-  "fixture": "fixtures/unsafe-context",
+  "name": "unsafe-context-bare-token",
+  "fixture": "fixtures/unsafe-context-bare-token",
   "expected_findings": [
     {
       "rule": "unsafe-context",
@@ -13,3 +13,4 @@
     "sk_test_abcdefghijklmnopqrstuvwxyz123456"
   ]
 }
+
