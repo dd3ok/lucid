@@ -1,0 +1,16 @@
+{
+  "obsolete_identifiers": {
+    "allow_in": [
+      "docs/**"
+    ],
+    "deny_in": [
+      "AGENTS.md",
+      "README.md",
+      "skills/*/SKILL.md"
+    ],
+    "terms": [
+      "LEGACY_CONTEXT_PIPELINE"
+    ]
+  }
+}
+

@@ -154,6 +154,10 @@ def matches_any(path: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
 
 
+def rule_enabled(config: dict[str, Any], key: str) -> bool:
+    return bool((config.get("rules") or {}).get(key, True))
+
+
 def read_text_safely(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
@@ -314,12 +318,15 @@ def rule_negative_residue(path: str, lines: list[str]) -> list[dict[str, Any]]:
 def rule_obsolete_identifier(
     path: str, lines: list[str], config: dict[str, Any]
 ) -> list[dict[str, Any]]:
-    allow_in = config["obsolete_identifiers"].get("allow_in", [])
-    terms = list(config["obsolete_identifiers"].get("terms", []))
+    obsolete = config.get("obsolete_identifiers") or {}
+    allow_in = obsolete.get("allow_in") or []
+    deny_in = obsolete.get("deny_in") or []
+    terms = list(obsolete.get("terms") or [])
     if matches_any(path, allow_in):
-        configured = [re.escape(term) for term in terms]
-    else:
-        configured = [re.escape(term) for term in terms] + [r"OLD_[A-Z0-9_]+"]
+        return []
+    configured = [re.escape(term) for term in terms]
+    if matches_any(path, deny_in):
+        configured.append(r"OLD_[A-Z0-9_]+")
     if not configured:
         return []
     pattern = re.compile("|".join(configured))
@@ -614,17 +621,27 @@ def audit(root: Path | str, output_format: str = "json") -> dict[str, Any]:
         lines = text.splitlines()
         file_texts.append({"path": file_info["path"], "text": text})
 
-        findings.extend(rule_always_loaded_bloat(file_info, config))
-        findings.extend(rule_compatibility_risk(file_info["path"], lines, config))
-        findings.extend(rule_negative_residue(file_info["path"], lines))
-        findings.extend(rule_obsolete_identifier(file_info["path"], lines, config))
-        findings.extend(rule_stale_context(file_info["path"], lines))
-        findings.extend(rule_over_specific_memory(file_info["path"], lines))
-        findings.extend(rule_stale_reference(root_path, file_info["path"], lines))
-        findings.extend(rule_archive_autoload(file_info["path"], lines))
-        findings.extend(rule_unsafe_context(file_info["path"], lines))
+        if rule_enabled(config, "always_loaded_bloat"):
+            findings.extend(rule_always_loaded_bloat(file_info, config))
+        if rule_enabled(config, "compatibility_risk"):
+            findings.extend(rule_compatibility_risk(file_info["path"], lines, config))
+        if rule_enabled(config, "negative_residue"):
+            findings.extend(rule_negative_residue(file_info["path"], lines))
+        if rule_enabled(config, "obsolete_identifier"):
+            findings.extend(rule_obsolete_identifier(file_info["path"], lines, config))
+        if rule_enabled(config, "stale_context"):
+            findings.extend(rule_stale_context(file_info["path"], lines))
+        if rule_enabled(config, "over_specific_memory"):
+            findings.extend(rule_over_specific_memory(file_info["path"], lines))
+        if rule_enabled(config, "stale_reference"):
+            findings.extend(rule_stale_reference(root_path, file_info["path"], lines))
+        if rule_enabled(config, "archive_autoload"):
+            findings.extend(rule_archive_autoload(file_info["path"], lines))
+        if rule_enabled(config, "unsafe_context"):
+            findings.extend(rule_unsafe_context(file_info["path"], lines))
 
-    findings.extend(rule_source_of_truth_drift(file_texts))
+    if rule_enabled(config, "source_of_truth_drift"):
+        findings.extend(rule_source_of_truth_drift(file_texts))
     findings.sort(key=lambda item: (item["path"], item["line_start"], item["rule"]))
     for index, finding in enumerate(findings, start=1):
         finding["id"] = f"LUCID-{index:04d}"

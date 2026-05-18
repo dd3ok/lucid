@@ -1,0 +1,12 @@
+{
+  "name": "obsolete-allow-precedence",
+  "fixture": "fixtures/obsolete-allow-precedence",
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "obsolete-identifier",
+      "path": "docs/reference.md"
+    }
+  ]
+}
+

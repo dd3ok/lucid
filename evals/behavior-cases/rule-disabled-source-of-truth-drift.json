@@ -1,0 +1,11 @@
+{
+  "name": "rule-disabled-source-of-truth-drift",
+  "fixture": "fixtures/rule-disabled-source-of-truth-drift",
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "source-of-truth-drift"
+    }
+  ]
+}
+
