@@ -11,6 +11,7 @@ description: >
   컨텍스트 정리. Do not use for ordinary README edits, general code
   refactors, normal linting, summarization, or creating a memory bank.
 version: 0.1.0
+metadata: {"openclaw":{"requires":{"bins":["python3"]}}}
 ---
 
 # Lucid
@@ -75,4 +76,3 @@ warnings.
 Read `references/memory-retention-rubric.md` before recommending memory changes.
 Read `references/compatibility-safety.md` before recommending removal of old-looking fields.
 Read `references/negative-residue.md` before handling negative warnings.
-

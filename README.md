@@ -22,6 +22,10 @@ source-of-truth aligned context.
 
 ## Install
 
+Lucid is distributed from the canonical skill folder:
+
+`skills/lucid/`
+
 ### Codex
 
 ```bash
@@ -38,9 +42,34 @@ ln -s /path/to/lucid/skills/lucid ~/.claude/skills/lucid
 
 ### Gemini CLI
 
+User skill:
+
+```bash
+mkdir -p ~/.gemini/skills
+ln -s /path/to/lucid/skills/lucid ~/.gemini/skills/lucid
+```
+
+Cross-agent alias:
+
 ```bash
 mkdir -p ~/.agents/skills
 ln -s /path/to/lucid/skills/lucid ~/.agents/skills/lucid
+```
+
+### OpenClaw
+
+Workspace skill:
+
+```bash
+mkdir -p /path/to/workspace/skills
+ln -s /path/to/lucid/skills/lucid /path/to/workspace/skills/lucid
+```
+
+Managed local skill:
+
+```bash
+mkdir -p ~/.openclaw/skills
+ln -s /path/to/lucid/skills/lucid ~/.openclaw/skills/lucid
 ```
 
 ## Usage
