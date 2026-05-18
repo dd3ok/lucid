@@ -1,0 +1,12 @@
+{
+  "name": "source-of-truth-command-same-set",
+  "fixture": "fixtures/source-of-truth-command-same-set",
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "source-of-truth-drift"
+    }
+  ],
+  "expected_total_findings": 0
+}
+

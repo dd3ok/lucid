@@ -1,0 +1,13 @@
+{
+  "name": "negative-residue-expanded",
+  "fixture": "fixtures/negative-residue-expanded",
+  "expected_findings": [
+    {
+      "rule": "negative-residue",
+      "path": "AGENTS.md",
+      "suggested_action": "replace-with-pointer"
+    }
+  ],
+  "forbidden_findings": []
+}
+

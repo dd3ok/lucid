@@ -143,6 +143,16 @@ def main() -> int:
         for forbidden in case.get("forbidden_findings", []):
             if has_match(findings, forbidden):
                 fail(f"{case_path.name} produced forbidden finding {forbidden}")
+        for forbidden_snippet in case.get("forbidden_snippets", []):
+            for finding in findings:
+                if forbidden_snippet in str(finding.get("snippet", "")):
+                    fail(f"{case_path.name} exposed forbidden snippet {forbidden_snippet}")
+        expected_plan_contains = case.get("expected_plan_contains", [])
+        if expected_plan_contains:
+            plan = lucid.render_plan_markdown(audit)
+            for expected_text in expected_plan_contains:
+                if expected_text not in plan:
+                    fail(f"{case_path.name} plan missing expected text {expected_text}")
 
     validate_trigger_queries()
     print("validate-evals: ok")

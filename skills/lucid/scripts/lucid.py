@@ -228,6 +228,31 @@ def line_snippet(line: str) -> str:
     return line.strip()[:240]
 
 
+def redact_unsafe_snippet(line: str) -> str:
+    redacted = line.strip()
+    redacted = re.sub(
+        r"sk_[A-Za-z0-9_=-]{12,}",
+        "[redacted]",
+        redacted,
+    )
+    redacted = re.sub(r"AKIA[0-9A-Z]{16}", "[redacted]", redacted)
+    redacted = re.sub(
+        r"(api[_-]?key|token|password|secret)(\s*[:=]\s*)([\"'])(.{8,}?)\3",
+        r"\1\2\3[redacted]\3",
+        redacted,
+        flags=re.I,
+    )
+    redacted = re.sub(
+        r"(api[_-]?key|token|password|secret)(\s*[:=]\s*)\S{8,}",
+        r"\1\2[redacted]",
+        redacted,
+        flags=re.I,
+    )
+    if "PRIVATE KEY-----" in redacted:
+        return "[redacted private key]"
+    return redacted[:240]
+
+
 def make_finding(
     *,
     rule: str,
@@ -288,9 +313,17 @@ def rule_always_loaded_bloat(
 
 def rule_negative_residue(path: str, lines: list[str]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
-    negative = re.compile(r"\b(do not|don't|never|avoid)\b|금지|하지 말|쓰지 말", re.I)
+    negative = re.compile(
+        r"\b(do not|don't|never|avoid|stop using|must not\s+(use|create|generate|write|call|run))\b|"
+        r"금지|하지 말|쓰지 말|사용하지 말|생성하지 말",
+        re.I,
+    )
     old = re.compile(
-        r"OLD_[A-Z0-9_]+|\b(previous workflow|old workflow|deprecated workflow|obsolete workflow)\b",
+        r"OLD_[A-Z0-9_]+|"
+        r"\b(previous|old|deprecated|obsolete|legacy)\s+"
+        r"(workflow|flow|artifact|file|identifier|command|process)\b|"
+        r"이전\s*(방식|워크플로우|파일|명령)|"
+        r"예전\s*(방식|워크플로우|파일|명령)",
         re.I,
     )
     fence = {"inside": False}
@@ -459,6 +492,8 @@ def candidate_reference_paths(line: str) -> list[str]:
 def should_check_reference(candidate: str) -> bool:
     if not candidate:
         return False
+    if candidate.startswith(("python ", "python3 ", "python -m ", "python3 -m ")):
+        return False
     if re.match(r"^[a-z][a-z0-9+.-]*:", candidate, re.I):
         return False
     if candidate.startswith(("#", "~", "/", "<")):
@@ -556,7 +591,7 @@ def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
                     path=path,
                     line_start=index,
                     line_end=index,
-                    snippet=line_snippet(line),
+                    snippet=redact_unsafe_snippet(line),
                     reason="Context contains secret-like, hidden, or dangerous content.",
                     suggested_action="manual-review",
                     confidence=0.82,
@@ -570,9 +605,32 @@ def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
 def rule_source_of_truth_drift(file_texts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     entries: dict[str, list[tuple[str, int, str]]] = {}
     pattern = re.compile(r"^\s*(canonical workflow|current workflow|source of truth)\s*:\s*(.+?)\s*$", re.I)
+    validation_commands: dict[str, list[tuple[int, str]]] = {}
     for file_text in file_texts:
         fence = {"inside": False}
+        in_validation_section = False
+        in_command_block = False
         for index, line in enumerate(file_text["text"].splitlines(), start=1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                in_validation_section = "validation" in stripped.lower()
+            if in_validation_section:
+                if stripped.startswith("```"):
+                    language = stripped.strip("`").lower()
+                    in_command_block = not in_command_block and language in {"bash", "sh", "shell", ""}
+                command_line = stripped
+                if command_line.startswith(("-", "*")):
+                    command_line = command_line[1:].strip()
+                command_match = None
+                if in_command_block or stripped.startswith(("-", "*")):
+                    command_match = re.match(
+                        r"python3\s+scripts/[A-Za-z0-9_.-]*(?:validate|check)[A-Za-z0-9_.-]*\.py\b",
+                        command_line,
+                    )
+                if command_match:
+                    validation_commands.setdefault(file_text["path"], []).append(
+                        (index, command_match.group(0))
+                    )
             if in_code_fence(line, fence):
                 continue
             match = pattern.match(line)
@@ -582,8 +640,23 @@ def rule_source_of_truth_drift(file_texts: list[dict[str, Any]]) -> list[dict[st
             value = match.group(2).strip()
             entries.setdefault(key, []).append((file_text["path"], index, value))
 
+    command_sets = {
+        path: tuple(command for _, command in commands)
+        for path, commands in validation_commands.items()
+        if commands
+    }
+    if len(command_sets) >= 2 and len(set(command_sets.values())) > 1:
+        for path, commands in validation_commands.items():
+            if not commands:
+                continue
+            entries.setdefault("validation command set", []).append(
+                (path, commands[0][0], " && ".join(command for _, command in commands))
+            )
+
     findings: list[dict[str, Any]] = []
     for key, values in entries.items():
+        if len({path for path, _, _ in values}) < 2:
+            continue
         distinct = {value.lower() for _, _, value in values}
         if len(distinct) < 2:
             continue
@@ -756,6 +829,15 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
             lines.append(f"- Replacement hint: {finding['replacement_hint']}")
         if finding.get("source_of_truth"):
             lines.append(f"- Source of truth: {finding['source_of_truth']}")
+        if finding["rule"] == "compatibility-risk":
+            lines.extend(
+                [
+                    "- Compatibility note:",
+                    "  - Why it looks stale: It uses old-looking or legacy compatibility wording.",
+                    "  - Why it may still be required: It may be part of schema, protocol, migration, or integration compatibility.",
+                    "  - Evidence needed before removal: Confirm current consumers, migrations, protocol versions, and regression tests.",
+                ]
+            )
         lines.extend(
             [
                 "- Safety: Non-destructive. Requires user approval before editing.",
