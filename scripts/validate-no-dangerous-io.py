@@ -13,6 +13,7 @@ TARGETS = [
     ROOT / "skills" / "lucid" / "scripts" / "lucid.py",
     ROOT / "scripts" / "validate-skill.py",
     ROOT / "scripts" / "validate-evals.py",
+    ROOT / "scripts" / "validate-no-dangerous-io.py",
 ]
 
 FORBIDDEN_IMPORT_PREFIXES = (
@@ -85,4 +86,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -13,6 +13,8 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / "evals" / "behavior-cases"
 LUCID_SCRIPT = ROOT / "skills" / "lucid" / "scripts" / "lucid.py"
+SKILL_MD = ROOT / "skills" / "lucid" / "SKILL.md"
+TRIGGER_QUERIES = ROOT / "evals" / "trigger-queries.json"
 ALLOWED_ACTIONS = {
     "remove",
     "replace-with-pointer",
@@ -47,6 +49,65 @@ def has_match(findings: list[dict[str, object]], expected: dict[str, str]) -> bo
     return False
 
 
+def skill_description() -> str:
+    text = SKILL_MD.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        fail("SKILL.md is missing frontmatter")
+    frontmatter = text.split("---\n", 2)[1]
+    lines = frontmatter.splitlines()
+    collecting = False
+    parts: list[str] = []
+    for line in lines:
+        if line.startswith("description:"):
+            collecting = True
+            parts.append(line.split(":", 1)[1].strip().strip("> "))
+            continue
+        if collecting and line.startswith((" ", "\t")):
+            parts.append(line.strip())
+            continue
+        if collecting:
+            break
+    description = " ".join(parts).lower()
+    if not description:
+        fail("SKILL.md description is missing")
+    return description
+
+
+def validate_trigger_queries() -> None:
+    if not TRIGGER_QUERIES.exists():
+        fail("evals/trigger-queries.json is missing")
+    data = json.loads(TRIGGER_QUERIES.read_text(encoding="utf-8"))
+    should_trigger = data.get("should_trigger", [])
+    should_not_trigger = data.get("should_not_trigger", [])
+    if not should_trigger or not should_not_trigger:
+        fail("trigger-queries.json must define should_trigger and should_not_trigger")
+
+    description = skill_description()
+    required_trigger_terms = [
+        "context hygiene",
+        "prompt debt",
+        "memory cleanup",
+        "old instructions",
+        "과거 잔재",
+        "오래된 지침",
+        "프롬프트 부채",
+        "컨텍스트 정리",
+    ]
+    required_boundary_terms = [
+        "ordinary readme edits",
+        "general code refactors",
+        "normal linting",
+        "summarization",
+        "creating a memory bank",
+    ]
+    for term in required_trigger_terms:
+        if term.lower() not in description:
+            fail(f"SKILL.md description missing trigger term: {term}")
+    for term in required_boundary_terms:
+        if term.lower() not in description:
+            fail(f"SKILL.md description missing boundary term: {term}")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
@@ -68,6 +129,11 @@ def main() -> int:
             action = finding.get("suggested_action")
             if action not in ALLOWED_ACTIONS:
                 fail(f"{case_path.name} produced unsupported action {action}")
+        expected_total = case.get("expected_total_findings")
+        if expected_total is not None and len(findings) != expected_total:
+            fail(
+                f"{case_path.name} expected {expected_total} findings, got {len(findings)}"
+            )
 
         for expected in case.get("expected_findings", []):
             if not has_match(findings, expected):
@@ -76,10 +142,10 @@ def main() -> int:
             if has_match(findings, forbidden):
                 fail(f"{case_path.name} produced forbidden finding {forbidden}")
 
+    validate_trigger_queries()
     print("validate-evals: ok")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
