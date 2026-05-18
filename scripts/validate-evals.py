@@ -77,6 +77,8 @@ def validate_trigger_queries() -> None:
     if not TRIGGER_QUERIES.exists():
         fail("evals/trigger-queries.json is missing")
     data = json.loads(TRIGGER_QUERIES.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        fail("trigger-queries.json must be a JSON object")
     should_trigger = data.get("should_trigger", [])
     should_not_trigger = data.get("should_not_trigger", [])
     if not should_trigger or not should_not_trigger:
