@@ -155,7 +155,7 @@ def matches_any(path: str, patterns: list[str]) -> bool:
 
 
 def rule_enabled(config: dict[str, Any], key: str) -> bool:
-    return bool(config.get("rules", {}).get(key, True))
+    return bool((config.get("rules") or {}).get(key, True))
 
 
 def read_text_safely(path: Path) -> str | None:
@@ -318,10 +318,10 @@ def rule_negative_residue(path: str, lines: list[str]) -> list[dict[str, Any]]:
 def rule_obsolete_identifier(
     path: str, lines: list[str], config: dict[str, Any]
 ) -> list[dict[str, Any]]:
-    obsolete = config["obsolete_identifiers"]
-    allow_in = obsolete.get("allow_in", [])
-    deny_in = obsolete.get("deny_in", [])
-    terms = list(obsolete.get("terms", []))
+    obsolete = config.get("obsolete_identifiers") or {}
+    allow_in = obsolete.get("allow_in") or []
+    deny_in = obsolete.get("deny_in") or []
+    terms = list(obsolete.get("terms") or [])
     if matches_any(path, allow_in):
         return []
     configured = [re.escape(term) for term in terms]
