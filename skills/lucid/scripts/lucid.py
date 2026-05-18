@@ -237,8 +237,8 @@ def redact_unsafe_snippet(line: str) -> str:
     )
     redacted = re.sub(r"AKIA[0-9A-Z]{16}", "[redacted]", redacted)
     redacted = re.sub(
-        r"(api[_-]?key|token|password|secret)(\s*[:=]\s*)([\"'])[^\"']{8,}([\"'])",
-        r"\1\2\3[redacted]\4",
+        r"(api[_-]?key|token|password|secret)(\s*[:=]\s*)([\"'])(.{8,}?)\3",
+        r"\1\2\3[redacted]\3",
         redacted,
         flags=re.I,
     )
