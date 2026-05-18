@@ -72,6 +72,10 @@ More detail: [docs/design-rationale.md](docs/design-rationale.md)
 
 Product contract: [docs/product-design.md](docs/product-design.md)
 
+Output schema: [docs/output-schema.md](docs/output-schema.md)
+
+Security policy: [SECURITY.md](SECURITY.md)
+
 ## Roadmap
 
 See [docs/product-design.md](docs/product-design.md#roadmap) for the detailed

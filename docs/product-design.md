@@ -53,6 +53,7 @@ The canonical skill source is `skills/lucid/`.
 - `skills/lucid/scripts/lucid.py` performs deterministic checks.
 - `evals/` and `fixtures/` define regression behavior.
 - `.lucid/` contains generated reports and plans.
+- `docs/output-schema.md` documents JSON and Markdown output contracts.
 
 Runtime-specific installations are derived from `skills/lucid/`; they are not
 separate sources of truth.
