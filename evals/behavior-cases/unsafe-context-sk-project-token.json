@@ -1,6 +1,6 @@
 {
-  "name": "unsafe-context-bare-token",
-  "fixture": "fixtures/unsafe-context-bare-token",
+  "name": "unsafe-context-sk-project-token",
+  "fixture": "fixtures/unsafe-context-sk-project-token",
   "expected_findings": [
     {
       "rule": "unsafe-context",
@@ -10,6 +10,6 @@
   ],
   "forbidden_findings": [],
   "forbidden_snippets": [
-    "sk-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+    "sk-proj-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
   ]
 }

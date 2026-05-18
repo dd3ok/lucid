@@ -110,6 +110,21 @@ def validate_trigger_queries() -> None:
             fail(f"SKILL.md description missing boundary term: {term}")
 
 
+def validate_plan_audit_input_scope(lucid: ModuleType) -> None:
+    outside_inputs = [
+        str(ROOT.parent / "lucid-outside-audit.json"),
+        "../lucid-outside-audit.json",
+    ]
+    for outside_audit in outside_inputs:
+        try:
+            lucid.load_audit_for_plan(ROOT, outside_audit)
+        except SystemExit:
+            continue
+        except OSError as exc:
+            fail(f"load_audit_for_plan tried to read audit input outside .lucid/: {exc}")
+        fail("load_audit_for_plan accepted audit input outside .lucid/")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
@@ -155,6 +170,7 @@ def main() -> int:
                     fail(f"{case_path.name} plan missing expected text {expected_text}")
 
     validate_trigger_queries()
+    validate_plan_audit_input_scope(lucid)
     print("validate-evals: ok")
     return 0
 
