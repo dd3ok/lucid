@@ -11,6 +11,7 @@
 - Behavior fixtures and eval validation for the v0.1 rule taxonomy.
 - GitHub Actions validation workflow.
 - Public output schema and security policy docs.
+- OpenClaw skill metadata and install path documentation.
 
 ### Security
 
