@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "lucid" / "SKILL.md"
 REFERENCES = ROOT / "skills" / "lucid" / "references"
 LUCID_SCRIPT = ROOT / "skills" / "lucid" / "scripts" / "lucid.py"
+OPENAI_YAML = ROOT / "skills" / "lucid" / "agents" / "openai.yaml"
 FORBIDDEN_PHRASES = [
     "handoff-txt",
     "soul-memory",
@@ -45,6 +46,55 @@ def parse_frontmatter(text: str) -> dict[str, str]:
     return fields
 
 
+def validate_openai_yaml() -> None:
+    if not OPENAI_YAML.exists():
+        fail("skills/lucid/agents/openai.yaml is missing")
+    lines = OPENAI_YAML.read_text(encoding="utf-8").splitlines()
+    required = {
+        "display_name",
+        "short_description",
+        "default_prompt",
+    }
+    for line in lines:
+        if not line.startswith(" ") and ":" in line:
+            key = line.split(":", 1)[0].strip()
+            if key in required:
+                fail(f"agents/openai.yaml has flat {key}; use interface.{key}")
+    if not any(line.rstrip() == "interface:" for line in lines):
+        fail("agents/openai.yaml must define interface metadata")
+    values: dict[str, str] = {}
+    inside_interface = False
+    for line in lines:
+        if line.rstrip() == "interface:":
+            inside_interface = True
+            continue
+        if inside_interface:
+            if line and not line.startswith(" "):
+                inside_interface = False
+                continue
+            stripped = line.strip()
+            if ":" in stripped:
+                key, raw_value = stripped.split(":", 1)
+                key = key.strip()
+                if key in required:
+                    raw_value = raw_value.strip()
+                    if not (
+                        len(raw_value) >= 2
+                        and raw_value.startswith('"')
+                        and raw_value.endswith('"')
+                    ):
+                        fail(f"agents/openai.yaml interface.{key} must be double-quoted")
+                    values[key] = raw_value[1:-1]
+    missing = sorted(required - values.keys())
+    if missing:
+        fail(f"agents/openai.yaml missing interface fields: {', '.join(missing)}")
+    short_description = values["short_description"]
+    if not 25 <= len(short_description) <= 64:
+        fail("agents/openai.yaml interface.short_description must be 25-64 chars")
+    if "$lucid" not in values["default_prompt"]:
+        fail("agents/openai.yaml interface.default_prompt must mention $lucid")
+
+
 def main() -> int:
     if not SKILL.exists():
         fail("skills/lucid/SKILL.md is missing")
@@ -62,6 +112,7 @@ def main() -> int:
         fail("frontmatter description exceeds 1024 characters")
     if len(text.splitlines()) > 120:
         fail("SKILL.md exceeds 120 lines")
+    validate_openai_yaml()
 
     required_refs = [
         "context-surfaces.md",
@@ -92,4 +143,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
