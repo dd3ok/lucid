@@ -1,0 +1,12 @@
+{
+  "name": "rule-disabled-unsafe",
+  "fixture": "fixtures/rule-disabled-unsafe",
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "unsafe-context",
+      "path": "AGENTS.md"
+    }
+  ]
+}
+

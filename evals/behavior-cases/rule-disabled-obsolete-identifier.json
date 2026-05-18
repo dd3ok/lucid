@@ -1,0 +1,12 @@
+{
+  "name": "rule-disabled-obsolete-identifier",
+  "fixture": "fixtures/rule-disabled-obsolete-identifier",
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "obsolete-identifier",
+      "path": "AGENTS.md"
+    }
+  ]
+}
+
