@@ -231,17 +231,12 @@ def line_snippet(line: str) -> str:
 def redact_unsafe_snippet(line: str) -> str:
     redacted = line.strip()
     redacted = re.sub(
-        r"(?<![A-Za-z0-9_-])sk-proj-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])",
+        r"(?<![A-Za-z0-9_-])sk-(?:proj-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])",
         "[redacted]",
         redacted,
     )
     redacted = re.sub(
-        r"(?<![A-Za-z0-9_-])sk-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])",
-        "[redacted]",
-        redacted,
-    )
-    redacted = re.sub(
-        r"sk_[A-Za-z0-9_=-]{12,}",
+        r"(?<![A-Za-z0-9_-])sk_[A-Za-z0-9_=-]{12,}(?![A-Za-z0-9_-])",
         "[redacted]",
         redacted,
     )
@@ -582,9 +577,8 @@ def rule_archive_autoload(path: str, lines: list[str]) -> list[dict[str, Any]]:
 
 def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
     patterns = [
-        re.compile(r"(?<![A-Za-z0-9_-])sk-proj-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])"),
-        re.compile(r"(?<![A-Za-z0-9_-])sk-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])"),
-        re.compile(r"\bsk_[A-Za-z0-9_=-]{12,}\b"),
+        re.compile(r"(?<![A-Za-z0-9_-])sk-(?:proj-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])"),
+        re.compile(r"(?<![A-Za-z0-9_-])sk_[A-Za-z0-9_=-]{12,}(?![A-Za-z0-9_-])"),
         re.compile(r"AKIA[0-9A-Z]{16}"),
         re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
         re.compile(r"\b(api[_-]?key|token|password|secret)\s*[:=]\s*[\"'][^\"']{16,}[\"']", re.I),
