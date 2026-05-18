@@ -1,5 +1,7 @@
 # Lucid
 
+[![validate](https://github.com/dd3ok/lucid/actions/workflows/validate.yml/badge.svg)](https://github.com/dd3ok/lucid/actions/workflows/validate.yml)
+
 Skill-first context hygiene toolkit for AI agents.
 
 Lucid helps agents audit and plan cleanup for stale, over-specific,
@@ -68,9 +70,16 @@ python3 skills/lucid/scripts/lucid.py verify --root . --strict
 
 More detail: [docs/design-rationale.md](docs/design-rationale.md)
 
+Product contract: [docs/product-design.md](docs/product-design.md)
+
 ## Roadmap
 
 - v0.1: read-only scanner/planner
 - v0.2: diff-only patch suggestions
 - v0.3: policy packs and stronger source graph
 - v1.0: GitHub Action, marketplace packaging, optional MCP integration
+
+## Status
+
+Lucid is in v0.1 draft development. The current package is a read-only
+scanner/planner intended for local validation before public release.
