@@ -72,6 +72,25 @@ The v0.1 rule IDs are:
 - `compatibility-risk`
 - `unsafe-context`
 
+## Rule IDs and Config Keys
+
+Lucid reports use hyphenated rule IDs, such as `stale-context`.
+
+JSON config uses snake_case keys under `rules`, such as `stale_context`,
+because they map directly to internal rule toggles.
+
+Example:
+
+```json
+{
+  "rules": {
+    "stale_context": false,
+    "negative_residue": true,
+    "unsafe_context": true
+  }
+}
+```
+
 Every finding maps to one cleanup action:
 
 - `remove`
@@ -96,6 +115,8 @@ Obsolete concepts should not remain in user-facing docs as warnings. Prefer
 positive source-of-truth pointers, validators, or eval fixtures.
 
 ## Roadmap
+
+This section is the detailed roadmap source of truth for public docs.
 
 - v0.1: read-only skill pack, deterministic audit, cleanup plans, evals, CI.
 - v0.2: CLI wrapper, diff-only suggestions, packaging, SARIF.
