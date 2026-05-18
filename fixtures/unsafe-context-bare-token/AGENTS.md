@@ -1,4 +1,3 @@
 # AGENTS.md
 
-Hidden token sk_test_abcdefghijklmnopqrstuvwxyz123456 with invisible char here: ​
-
+Plain leaked token: sk-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.

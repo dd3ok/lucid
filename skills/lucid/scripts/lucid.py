@@ -231,7 +231,12 @@ def line_snippet(line: str) -> str:
 def redact_unsafe_snippet(line: str) -> str:
     redacted = line.strip()
     redacted = re.sub(
-        r"sk_[A-Za-z0-9_=-]{12,}",
+        r"(?<![A-Za-z0-9_-])sk-(?:proj-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])",
+        "[redacted]",
+        redacted,
+    )
+    redacted = re.sub(
+        r"(?<![A-Za-z0-9_-])sk_[A-Za-z0-9_=-]{12,}(?![A-Za-z0-9_-])",
         "[redacted]",
         redacted,
     )
@@ -572,6 +577,8 @@ def rule_archive_autoload(path: str, lines: list[str]) -> list[dict[str, Any]]:
 
 def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
     patterns = [
+        re.compile(r"(?<![A-Za-z0-9_-])sk-(?:proj-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])"),
+        re.compile(r"(?<![A-Za-z0-9_-])sk_[A-Za-z0-9_=-]{12,}(?![A-Za-z0-9_-])"),
         re.compile(r"AKIA[0-9A-Z]{16}"),
         re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
         re.compile(r"\b(api[_-]?key|token|password|secret)\s*[:=]\s*[\"'][^\"']{16,}[\"']", re.I),
@@ -862,6 +869,18 @@ def safe_write_lucid_output(root: Path, out: str, content: str) -> Path:
     return out_resolved
 
 
+def safe_read_lucid_input(root: Path, candidate: str) -> Path:
+    root_resolved = root.resolve()
+    allowed_dir = (root_resolved / ".lucid").resolve()
+    input_path = Path(candidate)
+    if not input_path.is_absolute():
+        input_path = root_resolved / input_path
+    input_resolved = input_path.resolve()
+    if not input_resolved.is_relative_to(allowed_dir):
+        raise SystemExit("refusing to read audit input outside .lucid/")
+    return input_resolved
+
+
 def render_json(result: dict[str, Any]) -> str:
     return json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
@@ -869,9 +888,7 @@ def render_json(result: dict[str, Any]) -> str:
 def load_audit_for_plan(root: Path, audit_path: str | None) -> dict[str, Any]:
     if audit_path is None:
         return audit(root, output_format="json")
-    path = Path(audit_path)
-    if not path.is_absolute():
-        path = root / path
+    path = safe_read_lucid_input(root, audit_path)
     return json.loads(path.read_text(encoding="utf-8"))
 
 
