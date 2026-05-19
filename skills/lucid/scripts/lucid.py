@@ -165,6 +165,23 @@ SKIP_NEAR_DUPLICATE_HEADINGS = {
     "usage",
     "validation",
 }
+BARE_REFERENCE_FILENAMES = {
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "README.md",
+    "memory.md",
+    "MEMORY.md",
+}
+BARE_REFERENCE_FILENAME_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_./-])"
+    r"(?:" + "|".join(re.escape(name) for name in sorted(BARE_REFERENCE_FILENAMES)) + r")"
+    r"(?![A-Za-z0-9_.-])"
+)
+REFERENCE_INTENT_PATTERN = re.compile(
+    r"\b(read|load|open|check|review|consult|follow|see|refer(?:red|s|ring)?\s+to)\b",
+    re.I,
+)
 
 
 def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
@@ -532,13 +549,22 @@ def rule_over_specific_memory(path: str, lines: list[str]) -> list[dict[str, Any
     return findings
 
 
+def unique_preserve_order(values: list[str]) -> list[str]:
+    return list(dict.fromkeys(values))
+
+
 def candidate_reference_paths(line: str) -> list[str]:
     paths: list[str] = []
     for match in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", line):
-        paths.append(match.group(1).split("#", 1)[0])
+        target_parts = match.group(1).strip().split(None, 1)
+        if target_parts:
+            paths.append(target_parts[0].split("#", 1)[0])
     for match in re.finditer(r"`([^`]+\.(?:md|txt|json|yaml|yml|py|sh))`", line):
         paths.append(match.group(1))
-    return paths
+    if REFERENCE_INTENT_PATTERN.search(line):
+        for match in BARE_REFERENCE_FILENAME_PATTERN.finditer(line):
+            paths.append(match.group(0))
+    return unique_preserve_order(paths)
 
 
 def should_check_reference(candidate: str) -> bool:
@@ -554,7 +580,11 @@ def should_check_reference(candidate: str) -> bool:
         return False
     if any(char in candidate for char in "*?[]"):
         return False
-    if "/" not in candidate and not candidate.startswith("."):
+    if (
+        "/" not in candidate
+        and not candidate.startswith(".")
+        and candidate not in BARE_REFERENCE_FILENAMES
+    ):
         return False
     return True
 

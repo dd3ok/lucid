@@ -16,6 +16,9 @@
   and hidden Unicode inside fenced code blocks.
 - Conservative near-duplicate source-of-truth drift detection for repeated
   policy and workflow guidance.
+- Stale reference checks now cover high-signal bare filenames such as
+  `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `README.md`, `memory.md`, and
+  `MEMORY.md`.
 
 ### Security
 

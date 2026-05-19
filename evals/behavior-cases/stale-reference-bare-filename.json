@@ -1,0 +1,18 @@
+{
+  "name": "stale-reference-bare-filename",
+  "fixture": "fixtures/stale-reference-bare-filename",
+  "expected_total_findings": 3,
+  "expected_findings": [
+    {
+      "rule": "stale-reference",
+      "path": "AGENTS.md",
+      "suggested_action": "manual-review"
+    }
+  ],
+  "forbidden_findings": [],
+  "expected_plan_contains": [
+    "Referenced local path does not exist: CLAUDE.md",
+    "Referenced local path does not exist: GEMINI.md",
+    "Referenced local path does not exist: README.md"
+  ]
+}
