@@ -1,0 +1,5 @@
+{
+  "thresholds": {
+    "duplicate_similarity_min": 0.95
+  }
+}

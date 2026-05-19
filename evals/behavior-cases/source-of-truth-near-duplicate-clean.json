@@ -1,0 +1,16 @@
+{
+  "name": "source-of-truth-near-duplicate-clean",
+  "fixture": "fixtures/source-of-truth-near-duplicate-clean",
+  "expected_total_findings": 0,
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "source-of-truth-drift",
+      "path": "AGENTS.md"
+    },
+    {
+      "rule": "source-of-truth-drift",
+      "path": "README.md"
+    }
+  ]
+}

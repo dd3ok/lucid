@@ -1,0 +1,22 @@
+{
+  "name": "source-of-truth-near-duplicate",
+  "fixture": "fixtures/source-of-truth-near-duplicate",
+  "expected_findings": [
+    {
+      "rule": "source-of-truth-drift",
+      "path": "AGENTS.md",
+      "suggested_action": "replace-with-pointer",
+      "source_of_truth": "candidate duplicate: README.md:5-7"
+    },
+    {
+      "rule": "source-of-truth-drift",
+      "path": "README.md",
+      "suggested_action": "replace-with-pointer",
+      "source_of_truth": "candidate duplicate: AGENTS.md:5-7"
+    }
+  ],
+  "expected_plan_contains": [
+    "Similar source-of-truth or workflow guidance appears in multiple places",
+    "replace-with-pointer"
+  ]
+}
