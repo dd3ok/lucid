@@ -136,6 +136,35 @@ CONTEXTUAL_UNSAFE_PATTERNS = [
     re.compile(r"\brm\s+-rf\s+[/~$]"),
 ]
 ALL_UNSAFE_PATTERNS = SECRET_OR_HIDDEN_UNSAFE_PATTERNS + CONTEXTUAL_UNSAFE_PATTERNS
+POLICY_DRIFT_TERMS = {
+    "agent",
+    "audit",
+    "canonical",
+    "cleanup",
+    "context",
+    "instruction",
+    "memory",
+    "plan",
+    "policy",
+    "prompt",
+    "reference",
+    "rule",
+    "skill",
+    "source",
+    "truth",
+    "verify",
+    "workflow",
+}
+SKIP_NEAR_DUPLICATE_HEADINGS = {
+    "changelog",
+    "commands",
+    "install",
+    "installation",
+    "quick start",
+    "roadmap",
+    "usage",
+    "validation",
+}
 
 
 def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
@@ -618,7 +647,171 @@ def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
     return findings
 
 
-def rule_source_of_truth_drift(file_texts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def normalize_policy_text(text: str) -> str:
+    normalized = text.lower()
+    normalized = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 \2", normalized)
+    normalized = normalized.replace("`", "")
+    normalized = re.sub(r"[*_>#|]+", " ", normalized)
+    normalized = re.sub(r"[^a-z0-9_./-]+", " ", normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def word_shingles(text: str, n: int = 5) -> set[tuple[str, ...]]:
+    words = text.split()
+    if len(words) < n:
+        return set()
+    return {tuple(words[index : index + n]) for index in range(len(words) - n + 1)}
+
+
+def jaccard_similarity(left: set[tuple[str, ...]], right: set[tuple[str, ...]]) -> float:
+    if not left or not right:
+        return 0.0
+    return len(left & right) / len(left | right)
+
+
+def is_skipped_near_duplicate_heading(heading: str) -> bool:
+    normalized = heading.strip().lower().lstrip("#").strip()
+    return any(term in normalized for term in SKIP_NEAR_DUPLICATE_HEADINGS)
+
+
+def is_policy_like_block(normalized: str) -> bool:
+    words = normalized.split()
+    if len(words) < 25:
+        return False
+    terms = {word.strip("./-") for word in words}
+    return len(terms & POLICY_DRIFT_TERMS) >= 2
+
+
+def should_skip_policy_block(lines: list[str], heading: str) -> bool:
+    if is_skipped_near_duplicate_heading(heading):
+        return True
+    meaningful = [line.strip() for line in lines if line.strip()]
+    if not meaningful:
+        return True
+    list_like = sum(
+        1
+        for line in meaningful
+        if line.startswith(("-", "*", "|"))
+        or re.match(r"^\d+[.)]\s+", line)
+    )
+    if list_like and list_like >= max(1, int(len(meaningful) * 0.5)):
+        return True
+    return all(
+        line.startswith(("python ", "python3 ", "$ ", "./"))
+        or re.match(r"^[A-Za-z0-9_-]+=.+", line)
+        for line in meaningful
+    )
+
+
+def extract_policy_blocks(path: str, text: str) -> list[dict[str, Any]]:
+    blocks: list[dict[str, Any]] = []
+    heading = ""
+    pending: list[tuple[int, str]] = []
+    fence = {"inside": False}
+
+    def flush() -> None:
+        if not pending:
+            return
+        line_start = pending[0][0]
+        line_end = pending[-1][0]
+        block_lines = [line for _, line in pending]
+        block_text = "\n".join(block_lines).strip()
+        pending.clear()
+        if should_skip_policy_block(block_lines, heading):
+            return
+        normalized = normalize_policy_text(block_text)
+        if not is_policy_like_block(normalized):
+            return
+        shingles = word_shingles(normalized, 5)
+        blocks.append(
+            {
+                "path": path,
+                "line_start": line_start,
+                "line_end": line_end,
+                "text": block_text,
+                "shingles": shingles,
+            }
+        )
+
+    for index, line in enumerate(text.splitlines(), start=1):
+        if in_code_fence(line, fence):
+            flush()
+            continue
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            flush()
+            heading = stripped.lstrip("#").strip()
+            continue
+        if not stripped:
+            flush()
+            continue
+        pending.append((index, line))
+    flush()
+    return blocks
+
+
+def rule_near_duplicate_source_of_truth_drift(
+    file_texts: list[dict[str, Any]], config: dict[str, Any]
+) -> list[dict[str, Any]]:
+    threshold_raw = (config.get("thresholds") or {}).get(
+        "duplicate_similarity_min", 0.82
+    )
+    try:
+        threshold = max(0.0, min(1.0, float(threshold_raw)))
+    except (TypeError, ValueError):
+        threshold = 0.82
+    blocks: list[dict[str, Any]] = []
+    for file_text in file_texts:
+        blocks.extend(extract_policy_blocks(file_text["path"], file_text["text"]))
+
+    best_matches: dict[tuple[str, int, int], tuple[float, dict[str, Any]]] = {}
+    for left_index, left in enumerate(blocks):
+        for right in blocks[left_index + 1 :]:
+            if left["path"] == right["path"]:
+                continue
+            score = jaccard_similarity(left["shingles"], right["shingles"])
+            if score < threshold:
+                continue
+            left_key = (left["path"], left["line_start"], left["line_end"])
+            right_key = (right["path"], right["line_start"], right["line_end"])
+            if score > best_matches.get(left_key, (0.0, {}))[0]:
+                best_matches[left_key] = (score, right)
+            if score > best_matches.get(right_key, (0.0, {}))[0]:
+                best_matches[right_key] = (score, left)
+
+    findings: list[dict[str, Any]] = []
+    by_key = {
+        (block["path"], block["line_start"], block["line_end"]): block
+        for block in blocks
+    }
+    for key in sorted(best_matches):
+        block = by_key[key]
+        score, other = best_matches[key]
+        findings.append(
+            make_finding(
+                rule="source-of-truth-drift",
+                severity="medium",
+                path=block["path"],
+                line_start=block["line_start"],
+                line_end=block["line_end"],
+                snippet=line_snippet(block["text"]),
+                reason="Similar source-of-truth or workflow guidance appears in multiple places.",
+                suggested_action="replace-with-pointer",
+                confidence=round(score, 2),
+                requires_manual_review=True,
+                replacement_hint="Choose the canonical source, then replace duplicate policy text with pointers.",
+                source_of_truth=(
+                    f"candidate duplicate: {other['path']}:"
+                    f"{other['line_start']}-{other['line_end']}"
+                ),
+            )
+        )
+    return findings
+
+
+def rule_source_of_truth_drift(
+    file_texts: list[dict[str, Any]], config: dict[str, Any]
+) -> list[dict[str, Any]]:
     entries: dict[str, list[tuple[str, int, str]]] = {}
     pattern = re.compile(r"^\s*(canonical workflow|current workflow|source of truth)\s*:\s*(.+?)\s*$", re.I)
     validation_commands: dict[str, list[tuple[int, str]]] = {}
@@ -692,6 +885,7 @@ def rule_source_of_truth_drift(file_texts: list[dict[str, Any]]) -> list[dict[st
                     replacement_hint="Keep one canonical statement and replace duplicates with pointers.",
                 )
             )
+    findings.extend(rule_near_duplicate_source_of_truth_drift(file_texts, config))
     return findings
 
 
@@ -730,7 +924,7 @@ def audit(root: Path | str, output_format: str = "json") -> dict[str, Any]:
             findings.extend(rule_unsafe_context(file_info["path"], lines))
 
     if rule_enabled(config, "source_of_truth_drift"):
-        findings.extend(rule_source_of_truth_drift(file_texts))
+        findings.extend(rule_source_of_truth_drift(file_texts, config))
     findings.sort(key=lambda item: (item["path"], item["line_start"], item["rule"]))
     for index, finding in enumerate(findings, start=1):
         finding["id"] = f"LUCID-{index:04d}"

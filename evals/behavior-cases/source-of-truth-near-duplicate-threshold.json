@@ -1,0 +1,11 @@
+{
+  "name": "source-of-truth-near-duplicate-threshold",
+  "fixture": "fixtures/source-of-truth-near-duplicate-threshold",
+  "expected_total_findings": 0,
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "source-of-truth-drift"
+    }
+  ]
+}

@@ -14,6 +14,8 @@
 - OpenClaw skill metadata and install path documentation.
 - Unsafe context scanning now detects secret-like values, private key markers,
   and hidden Unicode inside fenced code blocks.
+- Conservative near-duplicate source-of-truth drift detection for repeated
+  policy and workflow guidance.
 
 ### Security
 
