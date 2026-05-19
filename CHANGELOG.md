@@ -12,6 +12,8 @@
 - GitHub Actions validation workflow.
 - Public output schema and security policy docs.
 - OpenClaw skill metadata and install path documentation.
+- Unsafe context scanning now detects secret-like values, private key markers,
+  and hidden Unicode inside fenced code blocks.
 
 ### Security
 

@@ -21,7 +21,8 @@ Lucid must not:
 - write outside `.lucid/`
 
 Generated reports may include short snippets. Unsafe snippets are redacted
-before JSON or Markdown rendering when Lucid detects secret-like content.
+before JSON or Markdown rendering when Lucid detects secret-like or hidden
+unsafe content.
 
 Redaction is best-effort and only applies to values Lucid detects as
 `unsafe-context` findings. Lucid is not a replacement for dedicated secret

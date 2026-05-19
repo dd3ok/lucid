@@ -175,3 +175,4 @@ Examples of redacted values include:
 - AWS access key-like literals
 - named `api_key`, `token`, `password`, or `secret` assignments
 - private key blocks
+- hidden Unicode markers such as zero-width characters
