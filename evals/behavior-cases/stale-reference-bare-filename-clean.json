@@ -1,0 +1,16 @@
+{
+  "name": "stale-reference-bare-filename-clean",
+  "fixture": "fixtures/stale-reference-bare-filename-clean",
+  "expected_total_findings": 0,
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "stale-reference",
+      "path": "AGENTS.md"
+    },
+    {
+      "rule": "stale-reference",
+      "path": "README.md"
+    }
+  ]
+}
