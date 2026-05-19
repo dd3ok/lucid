@@ -111,6 +111,31 @@ SKIP_DIRS = {
     ".mypy_cache",
     ".ruff_cache",
 }
+HIDDEN_UNICODE_PATTERN = re.compile(r"[\u200b\u200c\u200d\ufeff]")
+SK_DASH_TOKEN_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_-])sk-(?:proj-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])"
+)
+SK_UNDERSCORE_TOKEN_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_-])sk_[A-Za-z0-9_=-]{12,}(?![A-Za-z0-9_-])"
+)
+AWS_ACCESS_KEY_PATTERN = re.compile(r"AKIA[0-9A-Z]{16}")
+PRIVATE_KEY_MARKER_PATTERN = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")
+NAMED_SECRET_ASSIGNMENT_PATTERN = re.compile(
+    r"\b(api[_-]?key|token|password|secret)\s*[:=]\s*(?:[\"'][^\"']{16,}[\"']|\S{16,})",
+    re.I,
+)
+SECRET_OR_HIDDEN_UNSAFE_PATTERNS = [
+    SK_DASH_TOKEN_PATTERN,
+    SK_UNDERSCORE_TOKEN_PATTERN,
+    AWS_ACCESS_KEY_PATTERN,
+    PRIVATE_KEY_MARKER_PATTERN,
+    NAMED_SECRET_ASSIGNMENT_PATTERN,
+    HIDDEN_UNICODE_PATTERN,
+]
+CONTEXTUAL_UNSAFE_PATTERNS = [
+    re.compile(r"\brm\s+-rf\s+[/~$]"),
+]
+ALL_UNSAFE_PATTERNS = SECRET_OR_HIDDEN_UNSAFE_PATTERNS + CONTEXTUAL_UNSAFE_PATTERNS
 
 
 def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
@@ -230,17 +255,10 @@ def line_snippet(line: str) -> str:
 
 def redact_unsafe_snippet(line: str) -> str:
     redacted = line.strip()
-    redacted = re.sub(
-        r"(?<![A-Za-z0-9_-])sk-(?:proj-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])",
-        "[redacted]",
-        redacted,
-    )
-    redacted = re.sub(
-        r"(?<![A-Za-z0-9_-])sk_[A-Za-z0-9_=-]{12,}(?![A-Za-z0-9_-])",
-        "[redacted]",
-        redacted,
-    )
-    redacted = re.sub(r"AKIA[0-9A-Z]{16}", "[redacted]", redacted)
+    redacted = HIDDEN_UNICODE_PATTERN.sub("[hidden-unicode]", redacted)
+    redacted = SK_DASH_TOKEN_PATTERN.sub("[redacted]", redacted)
+    redacted = SK_UNDERSCORE_TOKEN_PATTERN.sub("[redacted]", redacted)
+    redacted = AWS_ACCESS_KEY_PATTERN.sub("[redacted]", redacted)
     redacted = re.sub(
         r"(api[_-]?key|token|password|secret)(\s*[:=]\s*)([\"'])(.{8,}?)\3",
         r"\1\2\3[redacted]\3",
@@ -576,20 +594,11 @@ def rule_archive_autoload(path: str, lines: list[str]) -> list[dict[str, Any]]:
 
 
 def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
-    patterns = [
-        re.compile(r"(?<![A-Za-z0-9_-])sk-(?:proj-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])"),
-        re.compile(r"(?<![A-Za-z0-9_-])sk_[A-Za-z0-9_=-]{12,}(?![A-Za-z0-9_-])"),
-        re.compile(r"AKIA[0-9A-Z]{16}"),
-        re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
-        re.compile(r"\b(api[_-]?key|token|password|secret)\s*[:=]\s*[\"'][^\"']{16,}[\"']", re.I),
-        re.compile(r"[\u200b\u200c\u200d\ufeff]"),
-        re.compile(r"\brm\s+-rf\s+[/~$]"),
-    ]
     findings: list[dict[str, Any]] = []
     fence = {"inside": False}
     for index, line in enumerate(lines, start=1):
-        if in_code_fence(line, fence):
-            continue
+        inside_fence = in_code_fence(line, fence)
+        patterns = SECRET_OR_HIDDEN_UNSAFE_PATTERNS if inside_fence else ALL_UNSAFE_PATTERNS
         if any(pattern.search(line) for pattern in patterns):
             findings.append(
                 make_finding(

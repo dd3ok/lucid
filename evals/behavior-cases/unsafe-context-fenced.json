@@ -1,0 +1,26 @@
+{
+  "name": "unsafe-context-fenced",
+  "fixture": "fixtures/unsafe-context-fenced",
+  "expected_total_findings": 4,
+  "expected_findings": [
+    {
+      "rule": "unsafe-context",
+      "path": "AGENTS.md",
+      "suggested_action": "manual-review"
+    }
+  ],
+  "forbidden_findings": [],
+  "forbidden_snippets": [
+    "example-secret-value-1234567890",
+    "example-unquoted-secret-value-1234567890",
+    "\u200b",
+    "not-real-key-material",
+    "rm -rf ./build",
+    "rm -rf /tmp/lucid-example"
+  ],
+  "expected_plan_contains": [
+    "[redacted]",
+    "[redacted private key]",
+    "[hidden-unicode]"
+  ]
+}
