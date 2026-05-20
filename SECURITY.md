@@ -18,7 +18,8 @@ Lucid must not:
 - execute project scripts
 - auto-apply patches
 - auto-delete files
-- write outside `.lucid/`
+- write scanner/planner reports outside `.lucid/`
+- write skill package archives outside `dist/`
 
 Generated reports may include short snippets. Unsafe snippets are redacted
 before JSON or Markdown rendering when Lucid detects secret-like or hidden

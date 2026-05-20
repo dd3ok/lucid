@@ -53,6 +53,7 @@ The canonical skill source is `skills/lucid/`.
 - `skills/lucid/scripts/lucid.py` performs deterministic checks.
 - `evals/` and `fixtures/` define regression behavior.
 - `.lucid/` contains generated reports and plans.
+- `dist/` contains generated skill package archives.
 - `docs/output-schema.md` documents JSON and Markdown output contracts.
 
 Runtime-specific installations are derived from `skills/lucid/`; they are not
@@ -120,6 +121,6 @@ positive source-of-truth pointers, validators, or eval fixtures.
 This section is the detailed roadmap source of truth for public docs.
 
 - v0.1: read-only skill pack, deterministic audit, cleanup plans, evals, CI.
-- v0.2: CLI wrapper, diff-only suggestions, packaging, SARIF.
+- v0.2: skill packaging, CLI wrapper, diff-only suggestions, SARIF.
 - v0.3: policy packs, source graph, redaction preview, provenance, migration helpers.
 - v1.0: stable schemas, GitHub Action productization, marketplace packaging, optional adapters.

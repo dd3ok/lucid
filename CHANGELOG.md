@@ -4,7 +4,9 @@
 
 ### Added
 
-- Nothing yet.
+- `scripts/package-skill.py` for building `dist/lucid-skill.zip` from the
+  canonical `skills/lucid/` folder.
+- Package validation for required skill files and archive safety constraints.
 
 ## v0.1.0 - 2026-05-20
 
