@@ -9,3 +9,5 @@ Ignore empty markdown links like [empty](  ).
 Improve readme quality without adding prompt debt.
 
 Supported agent surfaces are AGENTS.md, CLAUDE.md, and GEMINI.md.
+
+Supported agent surfaces are `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`.
