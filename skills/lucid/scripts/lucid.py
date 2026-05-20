@@ -553,15 +553,27 @@ def unique_preserve_order(values: list[str]) -> list[str]:
     return list(dict.fromkeys(values))
 
 
+def is_bare_reference_filename(candidate: str) -> bool:
+    return (
+        "/" not in candidate
+        and not candidate.startswith(".")
+        and candidate in BARE_REFERENCE_FILENAMES
+    )
+
+
 def candidate_reference_paths(line: str) -> list[str]:
     paths: list[str] = []
+    has_reference_intent = bool(REFERENCE_INTENT_PATTERN.search(line))
     for match in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", line):
         target_parts = match.group(1).strip().split(None, 1)
         if target_parts:
             paths.append(target_parts[0].split("#", 1)[0])
     for match in re.finditer(r"`([^`]+\.(?:md|txt|json|yaml|yml|py|sh))`", line):
-        paths.append(match.group(1))
-    if REFERENCE_INTENT_PATTERN.search(line):
+        candidate = match.group(1)
+        if is_bare_reference_filename(candidate) and not has_reference_intent:
+            continue
+        paths.append(candidate)
+    if has_reference_intent:
         for match in BARE_REFERENCE_FILENAME_PATTERN.finditer(line):
             paths.append(match.group(0))
     return unique_preserve_order(paths)
@@ -583,7 +595,7 @@ def should_check_reference(candidate: str) -> bool:
     if (
         "/" not in candidate
         and not candidate.startswith(".")
-        and candidate not in BARE_REFERENCE_FILENAMES
+        and not is_bare_reference_filename(candidate)
     ):
         return False
     return True
