@@ -22,9 +22,9 @@ source-of-truth aligned context.
 
 ## Install
 
-Lucid is distributed from the canonical skill folder:
-
-`skills/lucid/`
+Lucid is distributed from the canonical skill folder `skills/lucid/`.
+Runtime-specific installs should symlink or copy that folder; they are not
+separate sources of truth.
 
 ### Codex
 
@@ -72,6 +72,19 @@ mkdir -p ~/.openclaw/skills
 ln -s /path/to/lucid/skills/lucid ~/.openclaw/skills/lucid
 ```
 
+## Quick Start
+
+From a target repository:
+
+```bash
+python3 /path/to/lucid/skills/lucid/scripts/lucid.py scan --root . --format terminal
+python3 /path/to/lucid/skills/lucid/scripts/lucid.py audit --root . --format terminal
+python3 /path/to/lucid/skills/lucid/scripts/lucid.py plan --root . --out .lucid/plan.md
+```
+
+Lucid is read-only by default. It writes generated reports and plans only under
+`.lucid/`.
+
 ## Usage
 
 Ask your agent:
@@ -80,14 +93,7 @@ Ask your agent:
 Audit this repo for prompt debt and stale agent-facing context.
 ```
 
-Or run the bundled script directly:
-
-```bash
-python3 skills/lucid/scripts/lucid.py scan --root . --format terminal
-python3 skills/lucid/scripts/lucid.py audit --root . --format terminal
-python3 skills/lucid/scripts/lucid.py plan --root . --out .lucid/plan.md
-python3 skills/lucid/scripts/lucid.py verify --root . --strict
-```
+For direct terminal usage, see Quick Start.
 
 ## Design
 
@@ -105,6 +111,8 @@ Output schema: [docs/output-schema.md](docs/output-schema.md)
 
 Security policy: [SECURITY.md](SECURITY.md)
 
+Release checklist: [docs/release-checklist.md](docs/release-checklist.md)
+
 ## Roadmap
 
 See [docs/product-design.md](docs/product-design.md#roadmap) for the detailed
@@ -117,5 +125,9 @@ roadmap.
 
 ## Status
 
-Lucid is in v0.1 draft development. The current package is a read-only
-scanner/planner intended for local validation before public release.
+Lucid v0.1.0 is an initial public alpha. The current package is a read-only
+scanner/planner intended for local validation before applying cleanup changes.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
