@@ -4,8 +4,8 @@ Lucid v0.1 is a read-only scanner and planner for agent-facing context.
 
 ## Supported Versions
 
-Lucid is currently in v0.1 draft development. Security fixes target the latest
-`main` branch until stable releases begin.
+Lucid v0.1.x is an initial public alpha. Security fixes target the latest
+v0.1.x release and the `main` branch.
 
 ## Security Model
 
