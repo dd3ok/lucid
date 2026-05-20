@@ -4,6 +4,12 @@
 
 ### Added
 
+- Nothing yet.
+
+## v0.1.0 - 2026-05-20
+
+### Added
+
 - Skill-first Lucid package under `skills/lucid/`.
 - Deterministic `scan`, `audit`, `plan`, and `verify` commands.
 - Context hygiene references for memory retention, cleanup actions, source of
@@ -23,4 +29,5 @@
 ### Security
 
 - v0.1 is read-only by default and writes generated output only under `.lucid/`.
-- Unsafe context findings redact secret-like snippets before report rendering.
+- Unsafe context findings redact secret-like and hidden unsafe snippets before
+  report rendering.
