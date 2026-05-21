@@ -1125,6 +1125,49 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_plan_json(audit_result: dict[str, Any]) -> str:
+    actions: list[dict[str, Any]] = []
+    for finding in audit_result["findings"]:
+        action = {
+            "id": finding["id"],
+            "rule": finding["rule"],
+            "severity": finding["severity"],
+            "path": finding["path"],
+            "line_start": finding["line_start"],
+            "line_end": finding["line_end"],
+            "current_snippet": finding["snippet"],
+            "reason": finding["reason"],
+            "suggested_action": finding["suggested_action"],
+            "confidence": finding["confidence"],
+            "requires_manual_review": finding["requires_manual_review"],
+            "replacement_hint": finding.get("replacement_hint"),
+            "source_of_truth": finding.get("source_of_truth"),
+            "safety": "Non-destructive. Requires user approval before editing.",
+        }
+        if finding["rule"] == "compatibility-risk":
+            action["compatibility_note"] = {
+                "why_it_looks_stale": "It uses old-looking or legacy compatibility wording.",
+                "why_it_may_still_be_required": (
+                    "It may be part of schema, protocol, migration, or integration compatibility."
+                ),
+                "evidence_needed_before_removal": (
+                    "Confirm current consumers, migrations, protocol versions, and regression tests."
+                ),
+            }
+        actions.append(action)
+
+    plan = {
+        "format": "lucid-plan-json",
+        "version": audit_result["version"],
+        "root": audit_result["root"],
+        "generated_at": audit_result["generated_at"],
+        "files_scanned": audit_result["files_scanned"],
+        "summary": audit_result["summary"],
+        "recommended_actions": actions,
+    }
+    return render_json(plan)
+
+
 def safe_write_lucid_output(root: Path, out: str, content: str) -> Path:
     root_resolved = root.resolve()
     allowed_dir = (root_resolved / ".lucid").resolve()
@@ -1223,7 +1266,8 @@ def build_parser() -> argparse.ArgumentParser:
     plan_parser.add_argument("--root", default=".")
     plan_parser.add_argument("--config")
     plan_parser.add_argument("--audit")
-    plan_parser.add_argument("--out", default=".lucid/plan.md")
+    plan_parser.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    plan_parser.add_argument("--out")
 
     verify_parser = subcommands.add_parser("verify", help="Verify Lucid package constraints")
     verify_parser.add_argument("--root", default=".")
@@ -1255,8 +1299,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "plan":
         audit_result = load_audit_for_plan(root, args.audit, config_path=args.config)
-        content = render_plan_markdown(audit_result)
-        safe_write_lucid_output(root, args.out, content)
+        content = (
+            render_plan_json(audit_result)
+            if args.format == "json"
+            else render_plan_markdown(audit_result)
+        )
+        default_out = ".lucid/plan.json" if args.format == "json" else ".lucid/plan.md"
+        safe_write_lucid_output(root, args.out or default_out, content)
         print(content, end="" if content.endswith("\n") else "\n")
         return 0
 
