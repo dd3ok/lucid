@@ -1279,6 +1279,76 @@ def render_plan_json(audit_result: dict[str, Any]) -> str:
     return render_json(plan)
 
 
+def sarif_level(severity: str) -> str:
+    if severity == "high":
+        return "error"
+    if severity == "medium":
+        return "warning"
+    return "note"
+
+
+def render_sarif(audit_result: dict[str, Any]) -> str:
+    findings = audit_result["findings"]
+    rules = [
+        {
+            "id": rule_id,
+            "name": rule_id,
+            "shortDescription": {"text": rule_id},
+        }
+        for rule_id in sorted({finding["rule"] for finding in findings})
+    ]
+    results: list[dict[str, Any]] = []
+    for finding in findings:
+        results.append(
+            {
+                "ruleId": finding["rule"],
+                "level": sarif_level(str(finding["severity"])),
+                "message": {"text": finding["reason"]},
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {"uri": finding["path"]},
+                            "region": {
+                                "startLine": finding["line_start"],
+                                "endLine": finding["line_end"],
+                            },
+                        }
+                    }
+                ],
+                "properties": {
+                    "lucid_id": finding["id"],
+                    "severity": finding["severity"],
+                    "suggested_action": finding["suggested_action"],
+                    "requires_manual_review": finding["requires_manual_review"],
+                    "confidence": finding["confidence"],
+                    "replacement_hint": finding.get("replacement_hint"),
+                    "source_of_truth": finding.get("source_of_truth"),
+                },
+            }
+        )
+
+    sarif = {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "Lucid",
+                        "semanticVersion": VERSION,
+                        "rules": rules,
+                    }
+                },
+                "results": results,
+                "properties": {
+                    "summary": audit_result["summary"],
+                },
+            }
+        ],
+    }
+    return render_json(sarif)
+
+
 def is_patch_eligible(finding: dict[str, Any]) -> bool:
     return (
         finding["rule"] in PATCH_ELIGIBLE_RULES
@@ -1438,7 +1508,7 @@ def build_parser() -> argparse.ArgumentParser:
     audit_parser = subcommands.add_parser("audit", help="Audit context hygiene findings")
     audit_parser.add_argument("--root", default=".")
     audit_parser.add_argument("--config")
-    audit_parser.add_argument("--format", choices=["json", "terminal"], default="terminal")
+    audit_parser.add_argument("--format", choices=["json", "terminal", "sarif"], default="terminal")
     audit_parser.add_argument("--out")
 
     plan_parser = subcommands.add_parser("plan", help="Render a cleanup plan")
@@ -1476,7 +1546,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "audit":
         result = audit(root, output_format=args.format, config_path=args.config)
-        content = render_json(result) if args.format == "json" else render_terminal_audit(result)
+        if args.format == "json":
+            content = render_json(result)
+        elif args.format == "sarif":
+            content = render_sarif(result)
+        else:
+            content = render_terminal_audit(result)
         if args.out:
             safe_write_lucid_output(root, args.out, content)
         print(content, end="" if content.endswith("\n") else "\n")

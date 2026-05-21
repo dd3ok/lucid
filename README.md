@@ -79,6 +79,7 @@ From a target repository:
 ```bash
 python3 /path/to/lucid/skills/lucid/scripts/lucid.py scan --root . --format terminal
 python3 /path/to/lucid/skills/lucid/scripts/lucid.py audit --root . --format terminal
+python3 /path/to/lucid/skills/lucid/scripts/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
 python3 /path/to/lucid/skills/lucid/scripts/lucid.py plan --root . --out .lucid/plan.md
 python3 /path/to/lucid/skills/lucid/scripts/lucid.py suggest --root . --out .lucid/suggested.patch
 ```

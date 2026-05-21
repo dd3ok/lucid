@@ -18,12 +18,12 @@ Lucid must not:
 - execute project scripts
 - auto-apply patches
 - auto-delete files
-- write scanner/planner reports or patch suggestions outside `.lucid/`
+- write scanner/planner reports, SARIF reports, or patch suggestions outside `.lucid/`
 - write skill package archives outside `dist/`
 
-Generated reports may include short snippets. Unsafe snippets are redacted
-before JSON or Markdown rendering when Lucid detects secret-like or hidden
-unsafe content.
+Generated JSON and Markdown reports may include short snippets. Unsafe snippets
+are redacted before JSON or Markdown rendering when Lucid detects secret-like
+or hidden unsafe content. SARIF reports omit snippets.
 
 Redaction is best-effort and only applies to values Lucid detects as
 `unsafe-context` findings. Lucid is not a replacement for dedicated secret

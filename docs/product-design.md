@@ -32,8 +32,8 @@ Commands:
 - `plan`
 - `verify`
 
-v0.2 adds `suggest` for diff-only patch suggestions under `.lucid/` without
-applying them.
+v0.2 adds `suggest` for diff-only patch suggestions and SARIF audit output
+under `.lucid/` without applying changes.
 
 Constraints:
 
@@ -58,7 +58,7 @@ The canonical skill source is `skills/lucid/`.
 - `evals/` and `fixtures/` define regression behavior.
 - `.lucid/` contains generated reports and plans.
 - `dist/` contains generated skill package archives.
-- `docs/output-schema.md` documents JSON and Markdown output contracts.
+- `docs/output-schema.md` documents JSON, Markdown, SARIF, and patch output contracts.
 
 Runtime-specific installations are derived from `skills/lucid/`; they are not
 separate sources of truth.
