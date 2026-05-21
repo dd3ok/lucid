@@ -7,6 +7,10 @@ and stable enough for local automation.
 Rule IDs in reports use hyphen-case, such as `negative-residue`. Config keys
 under `rules` use snake_case, such as `negative_residue`.
 
+Commands that load repository config accept `--config` for an explicit config
+file inside the target root. When omitted, Lucid uses `lucid.config.json` from
+the target root if present.
+
 ## Scan Output
 
 Produced by:

@@ -85,6 +85,9 @@ python3 /path/to/lucid/skills/lucid/scripts/lucid.py plan --root . --out .lucid/
 Lucid is read-only by default. It writes generated reports and plans only under
 `.lucid/`.
 
+Use `--config` with `scan`, `audit`, `plan`, or `verify` to load an explicit
+config file inside the target repository.
+
 ## Package
 
 Build a distributable skill archive:
@@ -133,9 +136,10 @@ See [docs/product-design.md](docs/product-design.md#roadmap) for the detailed
 roadmap.
 
 - v0.1: read-only scanner/planner
-- v0.2: CLI wrapper and diff-only suggestions
+- v0.2: skill packaging, CLI wrapper, diff-only suggestions, SARIF
 - v0.3: policy packs and source graph
-- v1.0: stable packaging and optional adapters
+- v1.0: stable schemas, GitHub Action productization, marketplace packaging,
+  optional adapters
 
 ## Status
 

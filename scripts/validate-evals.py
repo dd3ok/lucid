@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import importlib.util
 import json
 import sys
@@ -125,6 +127,42 @@ def validate_plan_audit_input_scope(lucid: ModuleType) -> None:
         fail("load_audit_for_plan accepted audit input outside .lucid/")
 
 
+def validate_explicit_config_path(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "unsafe-context"
+    audit = lucid.audit(
+        fixture,
+        output_format="json",
+        config_path="alt-lucid.config.json",
+    )
+    if has_match(audit["findings"], {"rule": "unsafe-context", "path": "AGENTS.md"}):
+        fail("explicit config path did not disable unsafe_context")
+
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "audit",
+                "--root",
+                str(fixture),
+                "--config",
+                "alt-lucid.config.json",
+                "--format",
+                "json",
+            ]
+        )
+    if exit_code != 0:
+        fail("audit --config returned non-zero exit code")
+    cli_audit = json.loads(stdout.getvalue())
+    if has_match(cli_audit["findings"], {"rule": "unsafe-context", "path": "AGENTS.md"}):
+        fail("audit --config did not disable unsafe_context")
+
+    try:
+        lucid.audit(fixture, output_format="json", config_path="../lucid.config.example.json")
+    except SystemExit:
+        return
+    fail("explicit config path accepted file outside target root")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
@@ -171,6 +209,7 @@ def main() -> int:
 
     validate_trigger_queries()
     validate_plan_audit_input_scope(lucid)
+    validate_explicit_config_path(lucid)
     print("validate-evals: ok")
     return 0
 
