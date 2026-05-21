@@ -257,7 +257,8 @@ def main() -> int:
             action = actions[0]
             if action.get("rule") != "unsafe-context":
                 fail("plan --format json action did not preserve finding rule")
-            if action.get("current_snippet") == "sk_test_abcdefghijklmnopqrstuvwxyz123456":
+            plan_json_text = json.dumps(plan_json, ensure_ascii=False)
+            if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in plan_json_text:
                 fail("plan --format json exposed unsafe snippet")
 
     validate_trigger_queries()

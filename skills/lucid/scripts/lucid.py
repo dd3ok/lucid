@@ -100,6 +100,16 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "allow_env_read": False,
     },
 }
+PLAN_SAFETY_NOTE = "Non-destructive. Requires user approval before editing."
+PLAN_COMPATIBILITY_NOTE = {
+    "why_it_looks_stale": "It uses old-looking or legacy compatibility wording.",
+    "why_it_may_still_be_required": (
+        "It may be part of schema, protocol, migration, or integration compatibility."
+    ),
+    "evidence_needed_before_removal": (
+        "Confirm current consumers, migrations, protocol versions, and regression tests."
+    ),
+}
 SKIP_DIRS = {
     ".git",
     ".lucid",
@@ -1111,14 +1121,14 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
             lines.extend(
                 [
                     "- Compatibility note:",
-                    "  - Why it looks stale: It uses old-looking or legacy compatibility wording.",
-                    "  - Why it may still be required: It may be part of schema, protocol, migration, or integration compatibility.",
-                    "  - Evidence needed before removal: Confirm current consumers, migrations, protocol versions, and regression tests.",
+                    f"  - Why it looks stale: {PLAN_COMPATIBILITY_NOTE['why_it_looks_stale']}",
+                    f"  - Why it may still be required: {PLAN_COMPATIBILITY_NOTE['why_it_may_still_be_required']}",
+                    f"  - Evidence needed before removal: {PLAN_COMPATIBILITY_NOTE['evidence_needed_before_removal']}",
                 ]
             )
         lines.extend(
             [
-                "- Safety: Non-destructive. Requires user approval before editing.",
+                f"- Safety: {PLAN_SAFETY_NOTE}",
                 "",
             ]
         )
@@ -1142,18 +1152,10 @@ def render_plan_json(audit_result: dict[str, Any]) -> str:
             "requires_manual_review": finding["requires_manual_review"],
             "replacement_hint": finding.get("replacement_hint"),
             "source_of_truth": finding.get("source_of_truth"),
-            "safety": "Non-destructive. Requires user approval before editing.",
+            "safety": PLAN_SAFETY_NOTE,
         }
         if finding["rule"] == "compatibility-risk":
-            action["compatibility_note"] = {
-                "why_it_looks_stale": "It uses old-looking or legacy compatibility wording.",
-                "why_it_may_still_be_required": (
-                    "It may be part of schema, protocol, migration, or integration compatibility."
-                ),
-                "evidence_needed_before_removal": (
-                    "Confirm current consumers, migrations, protocol versions, and regression tests."
-                ),
-            }
+            action["compatibility_note"] = dict(PLAN_COMPATIBILITY_NOTE)
         actions.append(action)
 
     plan = {
