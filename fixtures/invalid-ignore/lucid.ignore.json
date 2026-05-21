@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "suppressions": [
+    {
+      "rule": "stale-context",
+      "path": "AGENTS.md"
+    }
+  ]
+}

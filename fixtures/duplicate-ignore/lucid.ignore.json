@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "suppressions": [
+    {
+      "rule": "stale-context",
+      "path": "AGENTS.md",
+      "reason": "First suppression reason."
+    },
+    {
+      "rule": "stale-context",
+      "path": "AGENTS.md",
+      "reason": "Duplicate suppression reason."
+    }
+  ]
+}

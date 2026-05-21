@@ -9,7 +9,7 @@ import fnmatch
 import json
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 
@@ -110,6 +110,7 @@ PLAN_COMPATIBILITY_NOTE = {
         "Confirm current consumers, migrations, protocol versions, and regression tests."
     ),
 }
+KNOWN_RULE_IDS = {rule.replace("_", "-") for rule in DEFAULT_CONFIG["rules"]}
 SKIP_DIRS = {
     ".git",
     ".lucid",
@@ -231,6 +232,67 @@ def load_config(root: Path, config_path: str | None = None) -> dict[str, Any]:
     return deep_merge(DEFAULT_CONFIG, overlay)
 
 
+def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
+    ignore_file = root.resolve() / "lucid.ignore.json"
+    if not ignore_file.exists():
+        return []
+    if not ignore_file.is_file():
+        raise SystemExit("lucid.ignore.json path is not a file")
+    try:
+        data = json.loads(ignore_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"invalid lucid.ignore.json: {exc}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit("lucid.ignore.json must be a JSON object")
+    if data.get("version") != 1:
+        raise SystemExit("lucid.ignore.json version must be 1")
+    suppressions = data.get("suppressions", [])
+    if not isinstance(suppressions, list):
+        raise SystemExit("lucid.ignore.json suppressions must be a list")
+
+    validated: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for index, suppression in enumerate(suppressions, start=1):
+        if not isinstance(suppression, dict):
+            raise SystemExit(f"lucid.ignore.json suppression {index} must be an object")
+        rule = suppression.get("rule")
+        path = suppression.get("path")
+        reason = suppression.get("reason")
+        if not isinstance(rule, str) or not rule.strip():
+            raise SystemExit(
+                f"lucid.ignore.json suppression {index} rule must be a non-empty string"
+            )
+        rule = rule.strip()
+        if rule not in KNOWN_RULE_IDS:
+            raise SystemExit(f"lucid.ignore.json suppression {index} has unknown rule: {rule}")
+        if not isinstance(path, str) or not path.strip():
+            raise SystemExit(
+                f"lucid.ignore.json suppression {index} path must be a non-empty string"
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            raise SystemExit(
+                f"lucid.ignore.json suppression {index} reason must be a non-empty string"
+            )
+        normalized_path = normalize_repo_path(
+            path.strip(), f"lucid.ignore.json suppression {index} path"
+        )
+        key = (rule, normalized_path)
+        if key in seen:
+            raise SystemExit(
+                f"lucid.ignore.json suppression {index} duplicates rule/path: "
+                f"{rule} {normalized_path}"
+            )
+        seen.add(key)
+        validated.append(
+            {
+                "rule": rule,
+                "path": normalized_path,
+                "reason": reason.strip(),
+            }
+        )
+    return validated
+
+
 def relpath(path: Path, root: Path) -> str:
     return path.resolve().relative_to(root.resolve()).as_posix()
 
@@ -249,6 +311,19 @@ def is_skipped(path: Path, root: Path) -> bool:
 
 def matches_any(path: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
+
+
+def normalize_repo_path(path: str, label: str) -> str:
+    normalized = path.replace("\\", "/")
+    candidate = PurePosixPath(normalized)
+    if (
+        not normalized
+        or candidate.is_absolute()
+        or candidate.as_posix() == "."
+        or ".." in candidate.parts
+    ):
+        raise SystemExit(f"{label} must be a repository-relative path: {path}")
+    return candidate.as_posix()
 
 
 def rule_enabled(config: dict[str, Any], key: str) -> bool:
@@ -963,6 +1038,26 @@ def rule_source_of_truth_drift(
     return findings
 
 
+def apply_suppressions(
+    findings: list[dict[str, Any]], suppressions: list[dict[str, str]]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if not suppressions:
+        return findings, []
+
+    suppression_lookup = {(item["rule"], item["path"]): item for item in suppressions}
+    active: list[dict[str, Any]] = []
+    suppressed: list[dict[str, Any]] = []
+    for finding in findings:
+        suppression = suppression_lookup.get((finding["rule"], finding["path"]))
+        if suppression is None:
+            active.append(finding)
+            continue
+        suppressed_finding = dict(finding)
+        suppressed_finding["suppression"] = dict(suppression)
+        suppressed.append(suppressed_finding)
+    return active, suppressed
+
+
 def audit(
     root: Path | str,
     output_format: str = "json",
@@ -970,6 +1065,7 @@ def audit(
 ) -> dict[str, Any]:
     root_path = Path(root).resolve()
     config = load_config(root_path, config_path)
+    suppressions = load_ignore_suppressions(root_path)
     scan_result = scan(root_path, output_format=output_format, config=config)
     findings: list[dict[str, Any]] = []
     file_texts: list[dict[str, Any]] = []
@@ -1006,18 +1102,22 @@ def audit(
     findings.sort(key=lambda item: (item["path"], item["line_start"], item["rule"]))
     for index, finding in enumerate(findings, start=1):
         finding["id"] = f"LUCID-{index:04d}"
+    active_findings, suppressed_findings = apply_suppressions(findings, suppressions)
 
     return {
         "version": VERSION,
         "root": str(root_path),
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "files_scanned": scan_result["files_scanned"],
-        "findings": findings,
-        "summary": summarize_findings(findings),
+        "findings": active_findings,
+        "suppressed_findings": suppressed_findings,
+        "summary": summarize_findings(active_findings, suppressed_findings),
     }
 
 
-def summarize_findings(findings: list[dict[str, Any]]) -> dict[str, int]:
+def summarize_findings(
+    findings: list[dict[str, Any]], suppressed_findings: list[dict[str, Any]] | None = None
+) -> dict[str, int]:
     summary = {
         "total": len(findings),
         "high": 0,
@@ -1025,6 +1125,7 @@ def summarize_findings(findings: list[dict[str, Any]]) -> dict[str, int]:
         "low": 0,
         "manual_review": 0,
         "compatibility_protected": 0,
+        "suppressed": len(suppressed_findings or []),
     }
     for finding in findings:
         severity = str(finding["severity"])
@@ -1058,8 +1159,10 @@ def render_terminal_audit(result: dict[str, Any]) -> str:
         f"Root: {result['root']}",
         f"Files scanned: {result['files_scanned']}",
         f"Findings: {result['summary']['total']}",
-        "",
     ]
+    if result["summary"].get("suppressed", 0):
+        lines.append(f"Suppressed: {result['summary']['suppressed']}")
+    lines.append("")
     for finding in result["findings"]:
         lines.append(
             f"- {finding['id']} {finding['rule']} {finding['severity']} "
@@ -1082,6 +1185,7 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
         f"- High severity: {summary['high']}",
         f"- Manual review: {summary['manual_review']}",
         f"- Compatibility-protected: {summary['compatibility_protected']}",
+        f"- Suppressed: {summary.get('suppressed', 0)}",
         f"- Generated at: {audit_result['generated_at']}",
         "",
         "## Recommended Actions",
@@ -1165,6 +1269,7 @@ def render_plan_json(audit_result: dict[str, Any]) -> str:
         "generated_at": audit_result["generated_at"],
         "files_scanned": audit_result["files_scanned"],
         "summary": audit_result["summary"],
+        "suppressed_findings": audit_result.get("suppressed_findings", []),
         "recommended_actions": actions,
     }
     return render_json(plan)
