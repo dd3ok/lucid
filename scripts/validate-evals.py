@@ -156,11 +156,37 @@ def validate_explicit_config_path(lucid: ModuleType) -> None:
     if has_match(cli_audit["findings"], {"rule": "unsafe-context", "path": "AGENTS.md"}):
         fail("audit --config did not disable unsafe_context")
 
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "plan",
+                "--root",
+                str(fixture),
+                "--config",
+                "alt-lucid.config.json",
+                "--out",
+                ".lucid/config-plan.md",
+            ]
+        )
+    if exit_code != 0:
+        fail("plan --config returned non-zero exit code")
+    if "No findings." not in stdout.getvalue():
+        fail("plan --config did not use explicit config")
+
     try:
         lucid.audit(fixture, output_format="json", config_path="../lucid.config.example.json")
+    except SystemExit as exc:
+        if "lucid.config.example.json" not in str(exc):
+            fail("outside-root config error did not include resolved path")
+    else:
+        fail("explicit config path accepted file outside target root")
+
+    try:
+        lucid.audit(fixture, output_format="json", config_path="")
     except SystemExit:
         return
-    fail("explicit config path accepted file outside target root")
+    fail("empty explicit config path fell back to default config")
 
 
 def main() -> int:

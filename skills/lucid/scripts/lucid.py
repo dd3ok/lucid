@@ -196,12 +196,12 @@ def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
 
 def resolve_config_path(root: Path, config_path: str | None) -> Path:
     root_resolved = root.resolve()
-    candidate = Path(config_path) if config_path else root_resolved / "lucid.config.json"
+    candidate = Path(config_path) if config_path is not None else root_resolved / "lucid.config.json"
     if not candidate.is_absolute():
         candidate = root_resolved / candidate
     resolved = candidate.resolve()
     if not resolved.is_relative_to(root_resolved):
-        raise SystemExit("refusing to read config outside target root")
+        raise SystemExit(f"refusing to read config outside target root: {resolved}")
     return resolved
 
 
@@ -295,9 +295,11 @@ def scan(
     root: Path | str,
     output_format: str = "json",
     config_path: str | None = None,
+    config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     root_path = Path(root).resolve()
-    config = load_config(root_path, config_path)
+    if config is None:
+        config = load_config(root_path, config_path)
     files = discover_context_surfaces(root_path, config)
     return {
         "version": VERSION,
@@ -958,7 +960,7 @@ def audit(
 ) -> dict[str, Any]:
     root_path = Path(root).resolve()
     config = load_config(root_path, config_path)
-    scan_result = scan(root_path, output_format=output_format, config_path=config_path)
+    scan_result = scan(root_path, output_format=output_format, config=config)
     findings: list[dict[str, Any]] = []
     file_texts: list[dict[str, Any]] = []
 

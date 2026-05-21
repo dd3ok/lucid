@@ -147,6 +147,9 @@ are no findings, the plan says `No findings.`
 `plan --audit` accepts audit input only from `.lucid/` inside the target root.
 This prevents accidental reads of unrelated local files.
 
+For `plan --audit`, Lucid uses the provided `.lucid/` audit payload. `--config`
+only applies when `plan` generates its own audit.
+
 ## Verify Output
 
 Produced by:
