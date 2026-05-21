@@ -32,6 +32,9 @@ Commands:
 - `plan`
 - `verify`
 
+v0.2 adds `suggest` for diff-only patch suggestions under `.lucid/` without
+applying them.
+
 Constraints:
 
 - Python standard library only.

@@ -80,13 +80,14 @@ From a target repository:
 python3 /path/to/lucid/skills/lucid/scripts/lucid.py scan --root . --format terminal
 python3 /path/to/lucid/skills/lucid/scripts/lucid.py audit --root . --format terminal
 python3 /path/to/lucid/skills/lucid/scripts/lucid.py plan --root . --out .lucid/plan.md
+python3 /path/to/lucid/skills/lucid/scripts/lucid.py suggest --root . --out .lucid/suggested.patch
 ```
 
-Lucid is read-only by default. It writes generated reports and plans only under
-`.lucid/`.
+Lucid is read-only by default. It writes generated reports, plans, and patch
+suggestions only under `.lucid/`.
 
-Use `--config` with `scan`, `audit`, `plan`, or `verify` to load an explicit
-config file inside the target repository.
+Use `--config` with `scan`, `audit`, `plan`, `suggest`, or `verify` to load an
+explicit config file inside the target repository.
 
 Use `lucid.ignore.json` at the target repository root to suppress reviewed
 false positives by `rule`, `path`, and required `reason`.

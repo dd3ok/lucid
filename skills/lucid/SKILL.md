@@ -42,7 +42,13 @@ to decide what is safe to remove.
    python3 <lucid-skill-dir>/scripts/lucid.py plan --root . --audit .lucid/audit.json --out .lucid/plan.md
    ```
 
-5. Classify every item as one of:
+5. Optionally generate a review-only patch suggestion:
+
+   ```bash
+   python3 <lucid-skill-dir>/scripts/lucid.py suggest --root . --audit .lucid/audit.json --out .lucid/suggested.patch
+   ```
+
+6. Classify every item as one of:
 
    ```text
    remove
@@ -54,9 +60,9 @@ to decide what is safe to remove.
    manual-review
    ```
 
-6. Do not edit or delete files unless the user explicitly asks to apply the plan.
+7. Do not edit or delete files unless the user explicitly asks to apply the plan.
 
-7. After approved edits, run:
+8. After approved edits, run:
 
    ```bash
    python3 <lucid-skill-dir>/scripts/lucid.py verify --root . --strict
