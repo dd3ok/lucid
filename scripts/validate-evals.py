@@ -232,6 +232,34 @@ def main() -> int:
             for expected_text in expected_plan_contains:
                 if expected_text not in plan:
                     fail(f"{case_path.name} plan missing expected text {expected_text}")
+        if case["name"] == "unsafe-context":
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                exit_code = lucid.main(
+                    [
+                        "plan",
+                        "--root",
+                        str(fixture),
+                        "--format",
+                        "json",
+                    ]
+                )
+            if exit_code != 0:
+                fail("plan --format json returned non-zero exit code")
+            plan_json = json.loads(stdout.getvalue())
+            if plan_json.get("format") != "lucid-plan-json":
+                fail("plan --format json did not emit plan JSON marker")
+            if plan_json.get("summary", {}).get("total") != 1:
+                fail("plan --format json did not include expected summary total")
+            actions = plan_json.get("recommended_actions")
+            if not isinstance(actions, list) or len(actions) != 1:
+                fail("plan --format json did not include one recommended action")
+            action = actions[0]
+            if action.get("rule") != "unsafe-context":
+                fail("plan --format json action did not preserve finding rule")
+            plan_json_text = json.dumps(plan_json, ensure_ascii=False)
+            if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in plan_json_text:
+                fail("plan --format json exposed unsafe snippet")
 
     validate_trigger_queries()
     validate_plan_audit_input_scope(lucid)

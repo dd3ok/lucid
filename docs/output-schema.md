@@ -106,6 +106,9 @@ Produced by:
 python3 skills/lucid/scripts/lucid.py plan --root . --out .lucid/plan.md
 ```
 
+Markdown is the default plan format. It can also be selected explicitly with
+`--format markdown`.
+
 The generated Markdown has this structure:
 
 ```text
@@ -149,6 +152,48 @@ This prevents accidental reads of unrelated local files.
 
 For `plan --audit`, Lucid uses the provided `.lucid/` audit payload. `--config`
 only applies when `plan` generates its own audit.
+
+## Plan JSON
+
+Produced by:
+
+```bash
+python3 skills/lucid/scripts/lucid.py plan --root . --format json --out .lucid/plan.json
+```
+
+When `--out` is omitted, JSON plans are written to `.lucid/plan.json`.
+
+Top-level fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `format` | string | Plan format marker, currently `lucid-plan-json`. |
+| `version` | string | Lucid tool version copied from the audit payload. |
+| `root` | string | Absolute target repository root. |
+| `generated_at` | string | UTC ISO-8601 timestamp from the audit payload. |
+| `files_scanned` | number | Count of discovered context surface files. |
+| `summary` | object | Same summary object used by audit output. |
+| `recommended_actions` | array | Machine-readable cleanup plan actions. |
+
+Recommended action fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Finding ID copied from the audit payload. |
+| `rule` | string | Hyphenated rule ID. |
+| `severity` | string | `high`, `medium`, or `low`. |
+| `path` | string | Repository-relative path. |
+| `line_start` | number | 1-based start line. |
+| `line_end` | number | 1-based end line. |
+| `current_snippet` | string | Short excerpt. Unsafe snippets remain redacted. |
+| `reason` | string | Why the finding was reported. |
+| `suggested_action` | string | One cleanup action from the allowed action set. |
+| `confidence` | number | Heuristic confidence between `0` and `1`. |
+| `requires_manual_review` | boolean | Whether the item needs manual review. |
+| `replacement_hint` | string or null | Suggested replacement direction, if available. |
+| `source_of_truth` | string or null | Canonical source pointer, if known. |
+| `safety` | string | Non-destructive handling note. |
+| `compatibility_note` | object | Present only for `compatibility-risk` findings. |
 
 ## Verify Output
 
