@@ -1295,14 +1295,14 @@ def render_sarif(audit_result: dict[str, Any]) -> str:
             "name": rule_id,
             "shortDescription": {"text": rule_id},
         }
-        for rule_id in sorted({finding["rule"] for finding in findings})
+        for rule_id in sorted(KNOWN_RULE_IDS)
     ]
     results: list[dict[str, Any]] = []
     for finding in findings:
         results.append(
             {
                 "ruleId": finding["rule"],
-                "level": sarif_level(str(finding["severity"])),
+                "level": sarif_level(finding["severity"]),
                 "message": {"text": finding["reason"]},
                 "locations": [
                     {

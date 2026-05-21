@@ -314,6 +314,10 @@ def validate_sarif_output(lucid: ModuleType) -> None:
         fail("audit --format sarif did not preserve the rule id")
     if result.get("level") != "error":
         fail("audit --format sarif did not map high severity to error")
+    rules = run.get("tool", {}).get("driver", {}).get("rules", [])
+    rule_ids = {rule.get("id") for rule in rules}
+    if set(lucid.KNOWN_RULE_IDS) != rule_ids:
+        fail("audit --format sarif did not expose all known rules in tool metadata")
 
     location = result.get("locations", [{}])[0].get("physicalLocation", {})
     artifact_uri = location.get("artifactLocation", {}).get("uri")
