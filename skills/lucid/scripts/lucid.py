@@ -112,6 +112,9 @@ PLAN_COMPATIBILITY_NOTE = {
     ),
 }
 KNOWN_RULE_IDS = {rule.replace("_", "-") for rule in DEFAULT_CONFIG["rules"]}
+PATCH_ELIGIBLE_RULES = {
+    "archive-autoload",
+}
 SKIP_DIRS = {
     ".git",
     ".lucid",
@@ -1278,8 +1281,10 @@ def render_plan_json(audit_result: dict[str, Any]) -> str:
 
 def is_patch_eligible(finding: dict[str, Any]) -> bool:
     return (
-        finding["suggested_action"] == "remove"
+        finding["rule"] in PATCH_ELIGIBLE_RULES
+        and finding["suggested_action"] == "remove"
         and not finding["requires_manual_review"]
+        and finding["line_start"] >= 1
         and finding["line_start"] <= finding["line_end"]
     )
 
@@ -1301,6 +1306,10 @@ def delete_ranges(lines: list[str], ranges: list[tuple[int, int]]) -> list[str]:
     return [line for index, line in enumerate(lines) if index not in deleted_indexes]
 
 
+def valid_line_ranges(ranges: list[tuple[int, int]], line_count: int) -> bool:
+    return all(1 <= start <= end <= line_count for start, end in ranges)
+
+
 def render_suggest_patch(root: Path, audit_result: dict[str, Any]) -> str:
     ranges_by_path: dict[str, list[tuple[int, int]]] = {}
     for finding in audit_result["findings"]:
@@ -1313,8 +1322,13 @@ def render_suggest_patch(root: Path, audit_result: dict[str, Any]) -> str:
     patch_chunks: list[str] = []
     for path in sorted(ranges_by_path):
         target = safe_patch_target(root, path)
-        original_lines = target.read_text(encoding="utf-8").splitlines()
-        ranges = sorted(ranges_by_path[path], reverse=True)
+        text = read_text_safely(target)
+        if text is None:
+            continue
+        original_lines = text.splitlines()
+        ranges = ranges_by_path[path]
+        if not valid_line_ranges(ranges, len(original_lines)):
+            continue
         suggested_lines = delete_ranges(original_lines, ranges)
         if suggested_lines == original_lines:
             continue

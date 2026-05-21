@@ -1,8 +1,8 @@
 # Output Schema
 
-Lucid v0.1 emits JSON for machine-readable commands, Markdown for cleanup
-plans, and unified diff text for patch suggestions. Schemas may evolve before
-v1.0, but v0.1 fields are intentionally small and stable enough for local
+Lucid emits JSON for machine-readable commands, Markdown for cleanup plans, and
+unified diff text for patch suggestions. Schemas may evolve before v1.0, but
+documented fields are intentionally small and stable enough for local
 automation.
 
 Rule IDs in reports use hyphen-case, such as `negative-residue`. Config keys
