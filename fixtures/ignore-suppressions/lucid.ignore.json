@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "suppressions": [
+    {
+      "rule": "stale-context",
+      "path": "AGENTS.md",
+      "reason": "Fixture keeps one known stale-context example to validate suppression behavior."
+    }
+  ]
+}

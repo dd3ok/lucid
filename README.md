@@ -88,6 +88,9 @@ Lucid is read-only by default. It writes generated reports and plans only under
 Use `--config` with `scan`, `audit`, `plan`, or `verify` to load an explicit
 config file inside the target repository.
 
+Use `lucid.ignore.json` at the target repository root to suppress reviewed
+false positives by `rule`, `path`, and required `reason`.
+
 ## Package
 
 Build a distributable skill archive:

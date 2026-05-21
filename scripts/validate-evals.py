@@ -189,6 +189,54 @@ def validate_explicit_config_path(lucid: ModuleType) -> None:
     fail("empty explicit config path fell back to default config")
 
 
+def validate_ignore_suppressions(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "ignore-suppressions"
+    audit = lucid.audit(fixture, output_format="json")
+    if has_match(audit["findings"], {"rule": "stale-context", "path": "AGENTS.md"}):
+        fail("lucid.ignore.json did not suppress stale-context finding")
+    if audit.get("summary", {}).get("suppressed") != 1:
+        fail("lucid.ignore.json did not count suppressed finding")
+    suppressed = audit.get("suppressed_findings")
+    if not isinstance(suppressed, list) or len(suppressed) != 1:
+        fail("lucid.ignore.json did not expose one suppressed finding")
+    suppression = suppressed[0].get("suppression", {})
+    if suppression.get("reason") != (
+        "Fixture keeps one known stale-context example to validate suppression behavior."
+    ):
+        fail("lucid.ignore.json did not preserve suppression reason")
+
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "plan",
+                "--root",
+                str(fixture),
+                "--format",
+                "json",
+            ]
+        )
+    if exit_code != 0:
+        fail("plan --format json with lucid.ignore.json returned non-zero exit code")
+    plan_json = json.loads(stdout.getvalue())
+    if plan_json.get("summary", {}).get("suppressed") != 1:
+        fail("plan --format json did not preserve suppressed count")
+    plan_suppressed = plan_json.get("suppressed_findings")
+    if not isinstance(plan_suppressed, list) or len(plan_suppressed) != 1:
+        fail("plan --format json did not expose suppressed finding")
+    if plan_json.get("recommended_actions") != []:
+        fail("plan --format json recommended a suppressed finding")
+
+    invalid_fixture = ROOT / "fixtures" / "invalid-ignore"
+    try:
+        lucid.audit(invalid_fixture, output_format="json")
+    except SystemExit as exc:
+        if "suppression 1 reason must be a non-empty string" not in str(exc):
+            fail("invalid lucid.ignore.json error did not identify missing reason")
+    else:
+        fail("invalid lucid.ignore.json was accepted")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
@@ -264,6 +312,7 @@ def main() -> int:
     validate_trigger_queries()
     validate_plan_audit_input_scope(lucid)
     validate_explicit_config_path(lucid)
+    validate_ignore_suppressions(lucid)
     print("validate-evals: ok")
     return 0
 

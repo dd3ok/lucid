@@ -55,6 +55,7 @@ Top-level fields:
 | `generated_at` | string | UTC ISO-8601 timestamp. |
 | `files_scanned` | number | Count of discovered context surface files. |
 | `findings` | array | Finding records. |
+| `suppressed_findings` | array | Findings suppressed by `lucid.ignore.json`, with suppression metadata. |
 | `summary` | object | Aggregated finding counts. |
 
 Summary fields:
@@ -67,6 +68,7 @@ Summary fields:
 | `low` | number | Low severity findings. |
 | `manual_review` | number | Findings requiring manual review. |
 | `compatibility_protected` | number | `compatibility-risk` findings. |
+| `suppressed` | number | Findings suppressed by `lucid.ignore.json`. |
 
 ## Finding
 
@@ -87,6 +89,7 @@ Every audit finding uses this shape:
 | `source_of_truth` | string or null | Canonical source pointer, if known. |
 | `confidence` | number | Heuristic confidence between `0` and `1`. |
 | `requires_manual_review` | boolean | Whether the item needs manual review. |
+| `suppression` | object | Present only in `suppressed_findings`; includes the matched ignore entry. |
 
 Allowed cleanup actions:
 
@@ -97,6 +100,31 @@ Allowed cleanup actions:
 - `move-to-eval`
 - `keep-with-reason`
 - `manual-review`
+
+## Ignore Suppressions
+
+When a reviewed finding should remain intentionally, place `lucid.ignore.json`
+at the target repository root:
+
+```json
+{
+  "version": 1,
+  "suppressions": [
+    {
+      "rule": "stale-context",
+      "path": "AGENTS.md",
+      "reason": "Known duplicate retained for compatibility guidance."
+    }
+  ]
+}
+```
+
+Suppressions match exact `rule` and repository-relative `path` values from audit
+findings. `reason` is required so ignored context debt remains accountable.
+Suppressed findings are removed from active `findings` and plan actions, counted
+under `summary.suppressed`, and exposed in `suppressed_findings`.
+`plan --audit` trusts the provided audit payload; `lucid.ignore.json` applies
+when Lucid generates the audit payload.
 
 ## Plan Markdown
 
@@ -173,6 +201,7 @@ Top-level fields:
 | `generated_at` | string | UTC ISO-8601 timestamp from the audit payload. |
 | `files_scanned` | number | Count of discovered context surface files. |
 | `summary` | object | Same summary object used by audit output. |
+| `suppressed_findings` | array | Suppressed finding records copied from the audit payload. |
 | `recommended_actions` | array | Machine-readable cleanup plan actions. |
 
 Recommended action fields:

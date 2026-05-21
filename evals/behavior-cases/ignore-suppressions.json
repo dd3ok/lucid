@@ -1,0 +1,12 @@
+{
+  "name": "ignore-suppressions",
+  "fixture": "fixtures/ignore-suppressions",
+  "expected_total_findings": 0,
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "stale-context",
+      "path": "AGENTS.md"
+    }
+  ]
+}
