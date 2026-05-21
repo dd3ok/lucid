@@ -194,14 +194,30 @@ def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def load_config(root: Path) -> dict[str, Any]:
-    config_path = root / "lucid.config.json"
-    if not config_path.exists():
+def resolve_config_path(root: Path, config_path: str | None) -> Path:
+    root_resolved = root.resolve()
+    candidate = Path(config_path) if config_path is not None else root_resolved / "lucid.config.json"
+    if not candidate.is_absolute():
+        candidate = root_resolved / candidate
+    resolved = candidate.resolve()
+    if not resolved.is_relative_to(root_resolved):
+        raise SystemExit(f"refusing to read config outside target root: {resolved}")
+    return resolved
+
+
+def load_config(root: Path, config_path: str | None = None) -> dict[str, Any]:
+    config_file = resolve_config_path(root, config_path)
+    if config_path is not None and not config_file.exists():
+        raise SystemExit(f"config file not found: {config_path}")
+    if not config_file.exists():
         return json.loads(json.dumps(DEFAULT_CONFIG))
+    if not config_file.is_file():
+        raise SystemExit(f"config path is not a file: {config_path or 'lucid.config.json'}")
     try:
-        overlay = json.loads(config_path.read_text(encoding="utf-8"))
+        overlay = json.loads(config_file.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise SystemExit(f"invalid lucid.config.json: {exc}") from exc
+        label = config_path or "lucid.config.json"
+        raise SystemExit(f"invalid {label}: {exc}") from exc
     return deep_merge(DEFAULT_CONFIG, overlay)
 
 
@@ -275,9 +291,15 @@ def discover_context_surfaces(root: Path, config: dict[str, Any]) -> list[dict[s
     return files
 
 
-def scan(root: Path | str, output_format: str = "json") -> dict[str, Any]:
+def scan(
+    root: Path | str,
+    output_format: str = "json",
+    config_path: str | None = None,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     root_path = Path(root).resolve()
-    config = load_config(root_path)
+    if config is None:
+        config = load_config(root_path, config_path)
     files = discover_context_surfaces(root_path, config)
     return {
         "version": VERSION,
@@ -931,10 +953,14 @@ def rule_source_of_truth_drift(
     return findings
 
 
-def audit(root: Path | str, output_format: str = "json") -> dict[str, Any]:
+def audit(
+    root: Path | str,
+    output_format: str = "json",
+    config_path: str | None = None,
+) -> dict[str, Any]:
     root_path = Path(root).resolve()
-    config = load_config(root_path)
-    scan_result = scan(root_path, output_format=output_format)
+    config = load_config(root_path, config_path)
+    scan_result = scan(root_path, output_format=output_format, config=config)
     findings: list[dict[str, Any]] = []
     file_texts: list[dict[str, Any]] = []
 
@@ -1130,16 +1156,22 @@ def render_json(result: dict[str, Any]) -> str:
     return json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
-def load_audit_for_plan(root: Path, audit_path: str | None) -> dict[str, Any]:
+def load_audit_for_plan(
+    root: Path, audit_path: str | None, config_path: str | None = None
+) -> dict[str, Any]:
     if audit_path is None:
-        return audit(root, output_format="json")
+        return audit(root, output_format="json", config_path=config_path)
     path = safe_read_lucid_input(root, audit_path)
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def verify(root: Path | str, strict: bool = False) -> dict[str, Any]:
+def verify(
+    root: Path | str,
+    strict: bool = False,
+    config_path: str | None = None,
+) -> dict[str, Any]:
     root_path = Path(root).resolve()
-    audit_result = audit(root_path, output_format="json")
+    audit_result = audit(root_path, output_format="json", config_path=config_path)
     errors: list[str] = []
 
     skill = root_path / "skills" / "lucid" / "SKILL.md"
@@ -1177,21 +1209,25 @@ def build_parser() -> argparse.ArgumentParser:
 
     scan_parser = subcommands.add_parser("scan", help="List agent-facing context surfaces")
     scan_parser.add_argument("--root", default=".")
+    scan_parser.add_argument("--config")
     scan_parser.add_argument("--format", choices=["json", "terminal"], default="terminal")
     scan_parser.add_argument("--out")
 
     audit_parser = subcommands.add_parser("audit", help="Audit context hygiene findings")
     audit_parser.add_argument("--root", default=".")
+    audit_parser.add_argument("--config")
     audit_parser.add_argument("--format", choices=["json", "terminal"], default="terminal")
     audit_parser.add_argument("--out")
 
     plan_parser = subcommands.add_parser("plan", help="Render a cleanup plan")
     plan_parser.add_argument("--root", default=".")
+    plan_parser.add_argument("--config")
     plan_parser.add_argument("--audit")
     plan_parser.add_argument("--out", default=".lucid/plan.md")
 
     verify_parser = subcommands.add_parser("verify", help="Verify Lucid package constraints")
     verify_parser.add_argument("--root", default=".")
+    verify_parser.add_argument("--config")
     verify_parser.add_argument("--strict", action="store_true")
 
     return parser
@@ -1202,7 +1238,7 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.root).resolve()
 
     if args.command == "scan":
-        result = scan(root, output_format=args.format)
+        result = scan(root, output_format=args.format, config_path=args.config)
         content = render_json(result) if args.format == "json" else render_terminal_scan(result)
         if args.out:
             safe_write_lucid_output(root, args.out, content)
@@ -1210,7 +1246,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "audit":
-        result = audit(root, output_format=args.format)
+        result = audit(root, output_format=args.format, config_path=args.config)
         content = render_json(result) if args.format == "json" else render_terminal_audit(result)
         if args.out:
             safe_write_lucid_output(root, args.out, content)
@@ -1218,14 +1254,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "plan":
-        audit_result = load_audit_for_plan(root, args.audit)
+        audit_result = load_audit_for_plan(root, args.audit, config_path=args.config)
         content = render_plan_markdown(audit_result)
         safe_write_lucid_output(root, args.out, content)
         print(content, end="" if content.endswith("\n") else "\n")
         return 0
 
     if args.command == "verify":
-        result = verify(root, strict=args.strict)
+        result = verify(root, strict=args.strict, config_path=args.config)
         print(render_json(result), end="")
         return 0 if result["ok"] else 1
 

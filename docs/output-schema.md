@@ -7,6 +7,10 @@ and stable enough for local automation.
 Rule IDs in reports use hyphen-case, such as `negative-residue`. Config keys
 under `rules` use snake_case, such as `negative_residue`.
 
+Commands that load repository config accept `--config` for an explicit config
+file inside the target root. When omitted, Lucid uses `lucid.config.json` from
+the target root if present.
+
 ## Scan Output
 
 Produced by:
@@ -142,6 +146,9 @@ are no findings, the plan says `No findings.`
 
 `plan --audit` accepts audit input only from `.lucid/` inside the target root.
 This prevents accidental reads of unrelated local files.
+
+For `plan --audit`, Lucid uses the provided `.lucid/` audit payload. `--config`
+only applies when `plan` generates its own audit.
 
 ## Verify Output
 
