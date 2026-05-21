@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import difflib
 import fnmatch
 import json
 import re
@@ -111,6 +112,9 @@ PLAN_COMPATIBILITY_NOTE = {
     ),
 }
 KNOWN_RULE_IDS = {rule.replace("_", "-") for rule in DEFAULT_CONFIG["rules"]}
+PATCH_ELIGIBLE_RULES = {
+    "archive-autoload",
+}
 SKIP_DIRS = {
     ".git",
     ".lucid",
@@ -1275,6 +1279,74 @@ def render_plan_json(audit_result: dict[str, Any]) -> str:
     return render_json(plan)
 
 
+def is_patch_eligible(finding: dict[str, Any]) -> bool:
+    return (
+        finding["rule"] in PATCH_ELIGIBLE_RULES
+        and finding["suggested_action"] == "remove"
+        and not finding["requires_manual_review"]
+        and finding["line_start"] >= 1
+        and finding["line_start"] <= finding["line_end"]
+    )
+
+
+def safe_patch_target(root: Path, path: str) -> Path:
+    normalized = normalize_repo_path(path, "finding path")
+    target = (root.resolve() / normalized).resolve()
+    if not target.is_relative_to(root.resolve()):
+        raise SystemExit(f"refusing to suggest patch outside target root: {path}")
+    if not target.is_file():
+        raise SystemExit(f"cannot suggest patch for missing file: {path}")
+    return target
+
+
+def delete_ranges(lines: list[str], ranges: list[tuple[int, int]]) -> list[str]:
+    deleted_indexes: set[int] = set()
+    for start, end in ranges:
+        deleted_indexes.update(range(start - 1, end))
+    return [line for index, line in enumerate(lines) if index not in deleted_indexes]
+
+
+def valid_line_ranges(ranges: list[tuple[int, int]], line_count: int) -> bool:
+    return all(1 <= start <= end <= line_count for start, end in ranges)
+
+
+def render_suggest_patch(root: Path, audit_result: dict[str, Any]) -> str:
+    ranges_by_path: dict[str, list[tuple[int, int]]] = {}
+    for finding in audit_result["findings"]:
+        if not is_patch_eligible(finding):
+            continue
+        ranges_by_path.setdefault(finding["path"], []).append(
+            (finding["line_start"], finding["line_end"])
+        )
+
+    patch_chunks: list[str] = []
+    for path in sorted(ranges_by_path):
+        target = safe_patch_target(root, path)
+        text = read_text_safely(target)
+        if text is None:
+            continue
+        original_lines = text.splitlines()
+        ranges = ranges_by_path[path]
+        if not valid_line_ranges(ranges, len(original_lines)):
+            continue
+        suggested_lines = delete_ranges(original_lines, ranges)
+        if suggested_lines == original_lines:
+            continue
+        diff_lines = list(
+            difflib.unified_diff(
+                original_lines,
+                suggested_lines,
+                fromfile=f"a/{path}",
+                tofile=f"b/{path}",
+                lineterm="",
+            )
+        )
+        if not diff_lines:
+            continue
+        patch_chunks.append(f"diff --git a/{path} b/{path}\n" + "\n".join(diff_lines))
+    return ("\n".join(patch_chunks) + "\n") if patch_chunks else ""
+
+
 def safe_write_lucid_output(root: Path, out: str, content: str) -> Path:
     root_resolved = root.resolve()
     allowed_dir = (root_resolved / ".lucid").resolve()
@@ -1376,6 +1448,12 @@ def build_parser() -> argparse.ArgumentParser:
     plan_parser.add_argument("--format", choices=["markdown", "json"], default="markdown")
     plan_parser.add_argument("--out")
 
+    suggest_parser = subcommands.add_parser("suggest", help="Render diff-only suggestions")
+    suggest_parser.add_argument("--root", default=".")
+    suggest_parser.add_argument("--config")
+    suggest_parser.add_argument("--audit")
+    suggest_parser.add_argument("--out")
+
     verify_parser = subcommands.add_parser("verify", help="Verify Lucid package constraints")
     verify_parser.add_argument("--root", default=".")
     verify_parser.add_argument("--config")
@@ -1413,6 +1491,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         default_out = ".lucid/plan.json" if args.format == "json" else ".lucid/plan.md"
         safe_write_lucid_output(root, args.out or default_out, content)
+        print(content, end="" if content.endswith("\n") else "\n")
+        return 0
+
+    if args.command == "suggest":
+        audit_result = load_audit_for_plan(root, args.audit, config_path=args.config)
+        content = render_suggest_patch(root, audit_result)
+        safe_write_lucid_output(root, args.out or ".lucid/suggested.patch", content)
         print(content, end="" if content.endswith("\n") else "\n")
         return 0
 

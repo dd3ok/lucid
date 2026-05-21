@@ -246,6 +246,37 @@ def validate_ignore_suppressions(lucid: ModuleType) -> None:
         fail("duplicate lucid.ignore.json was accepted")
 
 
+def validate_diff_suggestions(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "archive-autoload"
+    agents = fixture / "AGENTS.md"
+    before = agents.read_text(encoding="utf-8")
+
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "suggest",
+                "--root",
+                str(fixture),
+            ]
+        )
+    if exit_code != 0:
+        fail("suggest returned non-zero exit code")
+    patch = stdout.getvalue()
+    if "diff --git a/AGENTS.md b/AGENTS.md" not in patch:
+        fail("suggest did not emit a git-style patch header")
+    if "-Always read archive/ before every task." not in patch:
+        fail("suggest did not include expected removed line")
+    if agents.read_text(encoding="utf-8") != before:
+        fail("suggest modified the target file")
+
+    patch_file = fixture / ".lucid" / "suggested.patch"
+    if not patch_file.exists():
+        fail("suggest did not write .lucid/suggested.patch")
+    if patch_file.read_text(encoding="utf-8") != patch:
+        fail("suggested.patch did not match stdout patch")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
@@ -322,6 +353,7 @@ def main() -> int:
     validate_plan_audit_input_scope(lucid)
     validate_explicit_config_path(lucid)
     validate_ignore_suppressions(lucid)
+    validate_diff_suggestions(lucid)
     print("validate-evals: ok")
     return 0
 

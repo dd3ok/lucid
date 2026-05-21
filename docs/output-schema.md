@@ -1,8 +1,9 @@
 # Output Schema
 
-Lucid v0.1 emits JSON for machine-readable commands and Markdown for cleanup
-plans. Schemas may evolve before v1.0, but v0.1 fields are intentionally small
-and stable enough for local automation.
+Lucid emits JSON for machine-readable commands, Markdown for cleanup plans, and
+unified diff text for patch suggestions. Schemas may evolve before v1.0, but
+documented fields are intentionally small and stable enough for local
+automation.
 
 Rule IDs in reports use hyphen-case, such as `negative-residue`. Config keys
 under `rules` use snake_case, such as `negative_residue`.
@@ -224,6 +225,25 @@ Recommended action fields:
 | `source_of_truth` | string or null | Canonical source pointer, if known. |
 | `safety` | string | Non-destructive handling note. |
 | `compatibility_note` | object | Present only for `compatibility-risk` findings. |
+
+## Suggest Patch
+
+Produced by:
+
+```bash
+python3 skills/lucid/scripts/lucid.py suggest --root . --out .lucid/suggested.patch
+```
+
+When `--out` is omitted, patch suggestions are written to
+`.lucid/suggested.patch`.
+
+`suggest` emits unified diff text only. It does not apply the patch or modify
+target files. The first implementation only includes low-risk `remove` actions
+that do not require manual review; other findings remain in the plan for human
+review.
+
+`suggest --audit` accepts audit input only from `.lucid/` inside the target
+root, matching `plan --audit`.
 
 ## Verify Output
 
