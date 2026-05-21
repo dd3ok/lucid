@@ -6,6 +6,7 @@ Lucid v0.1 is a scanner and planner.
 
 - read files inside the target repo
 - write generated reports to `.lucid/`
+- write skill package archives to `dist/`
 - print terminal output
 - emit JSON and Markdown plans
 
@@ -18,6 +19,6 @@ Lucid v0.1 is a scanner and planner.
 - destructive shell commands
 - auto-deleting files
 - auto-applying patches
-- writing outside `.lucid/`
+- writing scanner/planner output outside `.lucid/`
+- writing skill package archives outside `dist/`
 - executing external project scripts
-

@@ -85,6 +85,20 @@ python3 /path/to/lucid/skills/lucid/scripts/lucid.py plan --root . --out .lucid/
 Lucid is read-only by default. It writes generated reports and plans only under
 `.lucid/`.
 
+## Package
+
+Build a distributable skill archive:
+
+```bash
+python3 scripts/package-skill.py
+```
+
+The archive is written to `dist/lucid-skill.zip` and contains the canonical
+`skills/lucid/` skill contents with repo-level docs, evals, fixtures, generated
+outputs, and cache files excluded.
+The zip archive has `SKILL.md` at its root so compatible runtimes can install
+it as a skill directory.
+
 ## Usage
 
 Ask your agent:

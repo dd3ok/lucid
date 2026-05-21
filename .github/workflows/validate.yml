@@ -23,6 +23,8 @@ jobs:
           python3 -m py_compile scripts/validate-skill.py
           python3 -m py_compile scripts/validate-evals.py
           python3 -m py_compile scripts/validate-no-dangerous-io.py
+          python3 -m py_compile scripts/validate-package-skill.py
+          python3 -m py_compile scripts/package-skill.py
 
       - name: Validate skill structure
         run: python3 scripts/validate-skill.py
@@ -33,10 +35,12 @@ jobs:
       - name: Validate eval fixtures
         run: python3 scripts/validate-evals.py
 
+      - name: Validate skill package
+        run: python3 scripts/validate-package-skill.py
+
       - name: Self audit
         run: |
           python3 skills/lucid/scripts/lucid.py scan --root . --format json
           python3 skills/lucid/scripts/lucid.py audit --root . --format json --out .lucid/audit.json
           python3 skills/lucid/scripts/lucid.py plan --root . --audit .lucid/audit.json --out .lucid/plan.md
           python3 skills/lucid/scripts/lucid.py verify --root . --strict
-

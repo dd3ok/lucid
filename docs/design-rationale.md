@@ -16,13 +16,15 @@ belong in eval fixtures.
   planning, and verification.
 - `evals/behavior-cases` and `fixtures` define behavior before implementation
   changes.
-- `.lucid/` is the only generated output directory.
+- `.lucid/` is the generated report and plan directory.
+- `dist/` is used only for explicit skill package archives.
 
 ## v0.1 Boundaries
 
 Lucid v0.1 is intentionally conservative. It does not call networks, call LLMs,
 read environment variable values, read credential stores, execute project
-scripts, delete files, apply patches, or write outside `.lucid/`.
+scripts, delete files, apply patches, or write scanner/planner output outside
+`.lucid/`.
 
 JSON config is used because the Python standard library can parse JSON without
 an extra dependency.
@@ -32,4 +34,3 @@ an extra dependency.
 Lucid should reduce context debt instead of creating new prompt debt. Old names
 and past mistakes should be enforced through validators or evals, not repeated
 as durable user-facing warnings.
-
