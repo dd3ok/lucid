@@ -236,6 +236,15 @@ def validate_ignore_suppressions(lucid: ModuleType) -> None:
     else:
         fail("invalid lucid.ignore.json was accepted")
 
+    duplicate_fixture = ROOT / "fixtures" / "duplicate-ignore"
+    try:
+        lucid.audit(duplicate_fixture, output_format="json")
+    except SystemExit as exc:
+        if "duplicates rule/path" not in str(exc):
+            fail("duplicate lucid.ignore.json error did not identify duplicate rule/path")
+    else:
+        fail("duplicate lucid.ignore.json was accepted")
+
 
 def main() -> int:
     if not CASES.exists():

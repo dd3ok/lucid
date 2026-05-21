@@ -251,6 +251,7 @@ def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
         raise SystemExit("lucid.ignore.json suppressions must be a list")
 
     validated: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
     for index, suppression in enumerate(suppressions, start=1):
         if not isinstance(suppression, dict):
             raise SystemExit(f"lucid.ignore.json suppression {index} must be an object")
@@ -272,12 +273,20 @@ def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
             raise SystemExit(
                 f"lucid.ignore.json suppression {index} reason must be a non-empty string"
             )
+        normalized_path = normalize_repo_path(
+            path.strip(), f"lucid.ignore.json suppression {index} path"
+        )
+        key = (rule, normalized_path)
+        if key in seen:
+            raise SystemExit(
+                f"lucid.ignore.json suppression {index} duplicates rule/path: "
+                f"{rule} {normalized_path}"
+            )
+        seen.add(key)
         validated.append(
             {
                 "rule": rule,
-                "path": normalize_repo_path(
-                    path.strip(), f"lucid.ignore.json suppression {index} path"
-                ),
+                "path": normalized_path,
                 "reason": reason.strip(),
             }
         )
@@ -1029,25 +1038,17 @@ def rule_source_of_truth_drift(
     return findings
 
 
-def matching_suppression(
-    finding: dict[str, Any], suppressions: list[dict[str, str]]
-) -> dict[str, str] | None:
-    for suppression in suppressions:
-        if finding["rule"] == suppression["rule"] and finding["path"] == suppression["path"]:
-            return suppression
-    return None
-
-
 def apply_suppressions(
     findings: list[dict[str, Any]], suppressions: list[dict[str, str]]
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if not suppressions:
         return findings, []
 
+    suppression_lookup = {(item["rule"], item["path"]): item for item in suppressions}
     active: list[dict[str, Any]] = []
     suppressed: list[dict[str, Any]] = []
     for finding in findings:
-        suppression = matching_suppression(finding, suppressions)
+        suppression = suppression_lookup.get((finding["rule"], finding["path"]))
         if suppression is None:
             active.append(finding)
             continue

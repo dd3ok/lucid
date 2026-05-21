@@ -54,7 +54,7 @@ Top-level fields:
 | `root` | string | Absolute target repository root. |
 | `generated_at` | string | UTC ISO-8601 timestamp. |
 | `files_scanned` | number | Count of discovered context surface files. |
-| `findings` | array | Finding records. |
+| `findings` | array | Active finding records after suppressions are applied. |
 | `suppressed_findings` | array | Findings suppressed by `lucid.ignore.json`, with suppression metadata. |
 | `summary` | object | Aggregated finding counts. |
 
@@ -62,7 +62,7 @@ Summary fields:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `total` | number | Total findings. |
+| `total` | number | Total active findings after suppressions are applied. |
 | `high` | number | High severity findings. |
 | `medium` | number | Medium severity findings. |
 | `low` | number | Low severity findings. |
@@ -150,6 +150,7 @@ The generated Markdown has this structure:
 - High severity:
 - Manual review:
 - Compatibility-protected:
+- Suppressed:
 - Generated at:
 
 ## Recommended Actions
