@@ -42,7 +42,8 @@ Constraints:
 - No credential reads.
 - No project script execution.
 - No auto-delete or auto-apply.
-- Generated output writes only under `.lucid/`.
+- Scanner and planner output writes only under `.lucid/`.
+- Skill package archives write only under `dist/`.
 
 ## Architecture
 

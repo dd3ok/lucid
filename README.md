@@ -96,6 +96,8 @@ python3 scripts/package-skill.py
 The archive is written to `dist/lucid-skill.zip` and contains the canonical
 `skills/lucid/` skill contents with repo-level docs, evals, fixtures, generated
 outputs, and cache files excluded.
+The zip archive has `SKILL.md` at its root so compatible runtimes can install
+it as a skill directory.
 
 ## Usage
 

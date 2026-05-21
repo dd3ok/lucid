@@ -77,11 +77,47 @@ def expect_failure(description: str, func: object) -> None:
     fail(f"expected failure for {description}")
 
 
+def validate_package_filters(package_module: ModuleType) -> None:
+    validation_root = ROOT / ".lucid" / "package-validation"
+    parent_cache_skill = validation_root / "__pycache__" / "skill"
+    parent_cache_skill.mkdir(parents=True, exist_ok=True)
+    (parent_cache_skill / "SKILL.md").write_text("---\nname: test\n---\n", encoding="utf-8")
+    outside_file = validation_root / "outside.txt"
+    outside_file.write_text("outside\n", encoding="utf-8")
+
+    selected = {
+        path.relative_to(parent_cache_skill).as_posix()
+        for path in package_module.iter_package_files(parent_cache_skill)
+    }
+    if "SKILL.md" not in selected:
+        fail("iter_package_files excluded file because of absolute parent path")
+
+    if package_module.should_include(Path("__pycache__") / "x.py"):
+        fail("should_include accepted __pycache__ relative path")
+    if not package_module.should_include(Path("references") / "security.md"):
+        fail("should_include rejected normal reference path")
+
+    link_path = parent_cache_skill / "outside-link.txt"
+    if not link_path.exists():
+        try:
+            link_path.symlink_to(outside_file)
+        except OSError:
+            return
+    if link_path.is_symlink():
+        selected = {
+            path.relative_to(parent_cache_skill).as_posix()
+            for path in package_module.iter_package_files(parent_cache_skill)
+        }
+        if "outside-link.txt" in selected:
+            fail("iter_package_files accepted symlinked file")
+
+
 def main() -> None:
     if not PACKAGE_SCRIPT.exists():
         fail("scripts/package-skill.py missing")
 
     package_module = load_package_module()
+    validate_package_filters(package_module)
     expect_failure(
         "output outside dist/",
         lambda: package_module.package_skill(

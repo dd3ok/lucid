@@ -53,12 +53,12 @@ def validate_output_path(output: Path) -> Path:
     return resolved
 
 
-def should_include(path: Path) -> bool:
-    if path.name in EXCLUDED_NAMES:
+def should_include(relative_path: Path) -> bool:
+    if relative_path.name in EXCLUDED_NAMES:
         return False
-    if path.suffix in EXCLUDED_SUFFIXES:
+    if relative_path.suffix in EXCLUDED_SUFFIXES:
         return False
-    if set(path.parts) & EXCLUDED_PARTS:
+    if set(relative_path.parts) & EXCLUDED_PARTS:
         return False
     return True
 
@@ -66,7 +66,12 @@ def should_include(path: Path) -> bool:
 def iter_package_files(skill_dir: Path) -> list[Path]:
     files: list[Path] = []
     for path in sorted(skill_dir.rglob("*")):
-        if path.is_file() and should_include(path):
+        if path.is_symlink():
+            continue
+        if not path.is_file():
+            continue
+        relative_path = path.relative_to(skill_dir)
+        if should_include(relative_path):
             files.append(path)
     return files
 
