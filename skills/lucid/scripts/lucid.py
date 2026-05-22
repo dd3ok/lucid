@@ -1202,6 +1202,20 @@ def summarize_findings(
     return summary
 
 
+def render_concise_summary(summary: dict[str, Any]) -> str:
+    return (
+        f"Summary: active={summary['total']} "
+        f"debt={summary['debt_score']} "
+        f"high={summary['high']} "
+        f"medium={summary['medium']} "
+        f"low={summary['low']} "
+        f"manual_review={summary['manual_review']} "
+        f"compatibility_protected={summary['compatibility_protected']} "
+        f"suppressed={summary.get('suppressed', 0)} "
+        f"suppressed_debt={summary.get('suppressed_debt_score', 0)}"
+    )
+
+
 def render_terminal_scan(result: dict[str, Any]) -> str:
     lines = [
         "Lucid scan",
@@ -1219,18 +1233,18 @@ def render_terminal_scan(result: dict[str, Any]) -> str:
 
 def render_terminal_audit(result: dict[str, Any]) -> str:
     result = ensure_scoring_fields(result)
+    summary = result["summary"]
     lines = [
         "Lucid audit",
         f"Root: {result['root']}",
         f"Files scanned: {result['files_scanned']}",
-        f"Findings: {result['summary']['total']}",
-        f"Debt score: {result['summary']['debt_score']}",
+        render_concise_summary(summary),
+        f"Findings: {summary['total']}",
+        f"Debt score: {summary['debt_score']}",
     ]
-    if result["summary"].get("suppressed", 0):
-        lines.append(f"Suppressed: {result['summary']['suppressed']}")
-        lines.append(
-            f"Suppressed debt score: {result['summary']['suppressed_debt_score']}"
-        )
+    if summary.get("suppressed", 0):
+        lines.append(f"Suppressed: {summary['suppressed']}")
+        lines.append(f"Suppressed debt score: {summary['suppressed_debt_score']}")
     lines.append("")
     for finding in result["findings"]:
         lines.append(
