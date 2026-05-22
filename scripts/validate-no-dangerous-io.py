@@ -15,6 +15,7 @@ TARGETS = [
     ROOT / "scripts" / "validate-skill.py",
     ROOT / "scripts" / "validate-evals.py",
     ROOT / "scripts" / "validate-no-dangerous-io.py",
+    ROOT / "scripts" / "validate-docs.py",
     ROOT / "scripts" / "validate-package-skill.py",
     ROOT / "scripts" / "package-skill.py",
 ]

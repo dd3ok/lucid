@@ -23,6 +23,7 @@ jobs:
           python3 -m py_compile scripts/validate-skill.py
           python3 -m py_compile scripts/validate-evals.py
           python3 -m py_compile scripts/validate-no-dangerous-io.py
+          python3 -m py_compile scripts/validate-docs.py
           python3 -m py_compile scripts/validate-package-skill.py
           python3 -m py_compile scripts/package-skill.py
 
@@ -34,6 +35,9 @@ jobs:
 
       - name: Validate eval fixtures
         run: python3 scripts/validate-evals.py
+
+      - name: Validate docs
+        run: python3 scripts/validate-docs.py
 
       - name: Validate skill package
         run: python3 scripts/validate-package-skill.py
