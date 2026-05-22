@@ -28,6 +28,7 @@ jobs:
 
       - name: Run Lucid audit
         run: |
+          mkdir -p .lucid
           python3 lucid.py audit --root . --format sarif --out .lucid/audit.sarif
           python3 lucid.py plan --root . --format json --out .lucid/plan.json
           python3 lucid.py audit --root . --format terminal | tee .lucid/audit.txt
@@ -47,6 +48,11 @@ jobs:
 
 Upload SARIF and Lucid artifacts only when the repository explicitly wants those
 GitHub-side integrations:
+
+For production workflows, consider pinning third-party actions such as
+`actions/checkout`, `github/codeql-action/upload-sarif`, and
+`actions/upload-artifact` to full-length commit SHAs according to your
+organization's GitHub Actions policy.
 
 ```yaml
 # Add at workflow or job level if uploading SARIF:
