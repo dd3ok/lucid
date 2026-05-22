@@ -28,7 +28,7 @@ and creates a cleanup plan before any edit.
 - Do not expose obsolete identifiers in user-facing docs except fixtures/evals.
 - Prefer validator/eval enforcement over natural-language warnings.
 - Lucid scripts are read-only by default.
-- Do not add auto-apply behavior in v0.1.
+- Do not add auto-apply behavior in v0.x.
 - Do not add network, LLM, env-read, credential-read, or destructive behavior.
 
 ## Validation

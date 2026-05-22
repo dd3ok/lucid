@@ -67,7 +67,7 @@ separate sources of truth.
 
 ## Rule Taxonomy
 
-The v0.1 rule IDs are:
+The current rule IDs are:
 
 - `stale-context`
 - `over-specific-memory`
