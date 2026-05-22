@@ -64,12 +64,17 @@ def validate_github_actions_doc() -> None:
 
     minimal_start = text.find("## Minimal Report-Only Workflow")
     optional_start = text.find("## Optional Uploads")
-    if minimal_start == -1 or optional_start == -1:
-        fail("docs/github-actions.md is missing workflow sections")
+    if minimal_start == -1 or optional_start == -1 or optional_start < minimal_start:
+        fail(
+            "docs/github-actions.md is missing workflow sections "
+            "or they are in the wrong order"
+        )
     minimal = text[minimal_start:optional_start]
     if "security-events: write" in minimal:
         fail("minimal GitHub Actions workflow must not require security-events: write")
 
+    if not README.exists():
+        fail("README.md is missing")
     readme = README.read_text(encoding="utf-8")
     require_text(readme, "docs/github-actions.md", "README.md")
 
