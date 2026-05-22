@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = [
+    ROOT / "lucid.py",
     ROOT / "skills" / "lucid" / "scripts" / "lucid.py",
     ROOT / "scripts" / "validate-skill.py",
     ROOT / "scripts" / "validate-evals.py",

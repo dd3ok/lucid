@@ -15,6 +15,7 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / "evals" / "behavior-cases"
 LUCID_SCRIPT = ROOT / "skills" / "lucid" / "scripts" / "lucid.py"
+LUCID_WRAPPER = ROOT / "lucid.py"
 SKILL_MD = ROOT / "skills" / "lucid" / "SKILL.md"
 TRIGGER_QUERIES = ROOT / "evals" / "trigger-queries.json"
 ALLOWED_ACTIONS = {
@@ -360,6 +361,29 @@ def validate_sarif_output(lucid: ModuleType) -> None:
         fail("audit --format sarif did not preserve suppression summary")
 
 
+def validate_cli_wrapper() -> None:
+    if not LUCID_WRAPPER.exists():
+        fail("lucid.py CLI wrapper is missing")
+    spec = importlib.util.spec_from_file_location("lucid_cli_wrapper", LUCID_WRAPPER)
+    if spec is None or spec.loader is None:
+        fail("cannot load lucid.py CLI wrapper")
+    wrapper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wrapper)
+
+    fixture = ROOT / "fixtures" / "archive-autoload"
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = wrapper.main(["scan", "--root", str(fixture), "--format", "json"])
+    if exit_code != 0:
+        fail("lucid.py wrapper returned non-zero exit code")
+    scan_json = json.loads(stdout.getvalue())
+    if scan_json.get("files_scanned") != 1:
+        fail("lucid.py wrapper did not delegate scan output")
+    paths = [item.get("path") for item in scan_json.get("files", [])]
+    if paths != ["AGENTS.md"]:
+        fail("lucid.py wrapper did not preserve delegated scan files")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
@@ -438,6 +462,7 @@ def main() -> int:
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
+    validate_cli_wrapper()
     print("validate-evals: ok")
     return 0
 
