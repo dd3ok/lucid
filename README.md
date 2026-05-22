@@ -76,6 +76,9 @@ ln -s /path/to/lucid/skills/lucid ~/.openclaw/skills/lucid
 
 From a target repository:
 
+The repo-level `lucid.py` wrapper is for cloned repository usage. Packaged or
+runtime-installed skills should invoke `<lucid-skill-dir>/scripts/lucid.py`.
+
 ```bash
 python3 /path/to/lucid/lucid.py scan --root . --format terminal
 python3 /path/to/lucid/lucid.py audit --root . --format terminal
