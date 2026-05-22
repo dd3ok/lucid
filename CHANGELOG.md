@@ -8,6 +8,7 @@
   and artifact upload workflows.
 - Report-only GitHub composite action wrapper for SARIF, JSON plan, and step
   summary generation.
+- GitHub Action wrapper root boundary guard and output-based upload examples.
 
 ## v0.2.0 - 2026-05-22
 

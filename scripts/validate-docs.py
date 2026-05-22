@@ -56,6 +56,10 @@ def validate_github_actions_doc() -> None:
         "Lucid does not apply patches",
         "run project scripts",
         "Artifact upload and SARIF upload are GitHub workflow choices",
+        "root must stay inside `GITHUB_WORKSPACE`",
+        "${{ steps.lucid.outputs.sarif }}",
+        "${{ steps.lucid.outputs['plan-json'] }}",
+        "${{ steps.lucid.outputs['terminal-audit'] }}",
     ]
     for needle in required:
         require_text(text, needle, "docs/github-actions.md")
@@ -97,11 +101,13 @@ def validate_action_wrapper() -> None:
     required = [
         "using: composite",
         "python3 \"${{ github.action_path }}/lucid.py\" audit --root",
-        "--format sarif --out .lucid/audit.sarif > /dev/null",
+        "--format sarif --out \"$artifact_dir/audit.sarif\" > /dev/null",
         "python3 \"${{ github.action_path }}/lucid.py\" plan --root",
-        "--format json --out .lucid/plan.json > /dev/null",
+        "--format json --out \"$artifact_dir/plan.json\" > /dev/null",
         "python3 \"${{ github.action_path }}/lucid.py\" audit --root",
-        "--format terminal --out .lucid/audit.txt > /dev/null",
+        "--format terminal --out \"$artifact_dir/audit.txt\" > /dev/null",
+        "GITHUB_WORKSPACE",
+        "root must stay inside GITHUB_WORKSPACE",
         "$GITHUB_STEP_SUMMARY",
     ]
     for needle in required:

@@ -26,6 +26,7 @@ The GitHub composite action wrapper uses GitHub runner-provided files such as
 `GITHUB_OUTPUT` and `GITHUB_STEP_SUMMARY` only to publish action outputs and a
 step summary. The Lucid Python runtime still does not read repository
 environment values, secrets, or credential stores.
+The wrapper also rejects `root` inputs that resolve outside `GITHUB_WORKSPACE`.
 
 Generated JSON and Markdown reports may include short snippets. Unsafe snippets
 are redacted before JSON or Markdown rendering when Lucid detects secret-like

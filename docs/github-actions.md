@@ -15,6 +15,7 @@ Use the wrapper when the workflow can reference this repository as an action.
 The action runs Lucid from the action checkout, writes reports under `.lucid/`,
 suppresses report body stdout in the workflow log, and does not upload SARIF or
 artifacts by itself.
+The `root` input is constrained so the root must stay inside `GITHUB_WORKSPACE`.
 
 ```yaml
 name: lucid
@@ -102,16 +103,16 @@ permissions:
 - name: Upload SARIF
   uses: github/codeql-action/upload-sarif@v3
   with:
-    sarif_file: .lucid/audit.sarif
+    sarif_file: ${{ steps.lucid.outputs.sarif }}
 
 - name: Upload Lucid artifacts
   uses: actions/upload-artifact@v4
   with:
     name: lucid
     path: |
-      .lucid/audit.sarif
-      .lucid/plan.json
-      .lucid/audit.txt
+      ${{ steps.lucid.outputs.sarif }}
+      ${{ steps.lucid.outputs['plan-json'] }}
+      ${{ steps.lucid.outputs['terminal-audit'] }}
 ```
 
 ## Optional Config
