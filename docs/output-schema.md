@@ -127,6 +127,35 @@ under `summary.suppressed`, and exposed in `suppressed_findings`.
 `plan --audit` trusts the provided audit payload; `lucid.ignore.json` applies
 when Lucid generates the audit payload.
 
+## SARIF Output
+
+Produced by:
+
+```bash
+python3 skills/lucid/scripts/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
+```
+
+SARIF output uses version `2.1.0` and is intended for report-only CI and code
+scanning integrations. It maps active audit findings to
+`runs[0].results[]`; suppressed findings are not emitted as SARIF results. The
+run properties include the same summary object used by audit JSON.
+
+SARIF results intentionally omit finding snippets. Use audit JSON or a plan
+artifact when human review needs the excerpt context.
+
+Result mapping:
+
+| Lucid field | SARIF field |
+| --- | --- |
+| `rule` | `ruleId` |
+| `severity` | `level` (`high` -> `error`, `medium` -> `warning`, `low` -> `note`) |
+| `reason` | `message.text` |
+| `path` | `locations[0].physicalLocation.artifactLocation.uri` |
+| `line_start` | `locations[0].physicalLocation.region.startLine` |
+| `line_end` | `locations[0].physicalLocation.region.endLine` |
+| `id` | `properties.lucid_id` |
+| `suggested_action` | `properties.suggested_action` |
+
 ## Plan Markdown
 
 Produced by:

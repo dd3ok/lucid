@@ -277,6 +277,89 @@ def validate_diff_suggestions(lucid: ModuleType) -> None:
         fail("suggested.patch did not match stdout patch")
 
 
+def validate_sarif_output(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "unsafe-context"
+
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "audit",
+                "--root",
+                str(fixture),
+                "--format",
+                "sarif",
+                "--out",
+                ".lucid/audit.sarif",
+            ]
+        )
+    if exit_code != 0:
+        fail("audit --format sarif returned non-zero exit code")
+
+    sarif = json.loads(stdout.getvalue())
+    if sarif.get("version") != "2.1.0":
+        fail("audit --format sarif did not emit SARIF 2.1.0")
+    if sarif.get("$schema") != "https://json.schemastore.org/sarif-2.1.0.json":
+        fail("audit --format sarif did not include the SARIF schema URI")
+
+    runs = sarif.get("runs")
+    if not isinstance(runs, list) or len(runs) != 1:
+        fail("audit --format sarif did not emit exactly one run")
+    run = runs[0]
+    results = run.get("results")
+    if not isinstance(results, list) or len(results) != 1:
+        fail("audit --format sarif did not emit one active result")
+    result = results[0]
+    if result.get("ruleId") != "unsafe-context":
+        fail("audit --format sarif did not preserve the rule id")
+    if result.get("level") != "error":
+        fail("audit --format sarif did not map high severity to error")
+    rules = run.get("tool", {}).get("driver", {}).get("rules", [])
+    rule_ids = {rule.get("id") for rule in rules}
+    if set(lucid.KNOWN_RULE_IDS) != rule_ids:
+        fail("audit --format sarif did not expose all known rules in tool metadata")
+
+    location = result.get("locations", [{}])[0].get("physicalLocation", {})
+    artifact_uri = location.get("artifactLocation", {}).get("uri")
+    region = location.get("region", {})
+    if artifact_uri != "AGENTS.md":
+        fail("audit --format sarif did not use a repo-relative artifact URI")
+    if region.get("startLine") != 3 or region.get("endLine") != 3:
+        fail("audit --format sarif did not preserve finding line range")
+
+    serialized = json.dumps(sarif, ensure_ascii=False)
+    if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in serialized:
+        fail("audit --format sarif exposed unsafe snippet")
+
+    sarif_file = fixture / ".lucid" / "audit.sarif"
+    if not sarif_file.exists():
+        fail("audit --format sarif did not write .lucid/audit.sarif")
+    if sarif_file.read_text(encoding="utf-8") != stdout.getvalue():
+        fail("audit.sarif did not match stdout SARIF")
+
+    suppressed_fixture = ROOT / "fixtures" / "ignore-suppressions"
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "audit",
+                "--root",
+                str(suppressed_fixture),
+                "--format",
+                "sarif",
+            ]
+        )
+    if exit_code != 0:
+        fail("audit --format sarif returned non-zero exit code for suppressions")
+    suppressed_sarif = json.loads(stdout.getvalue())
+    suppressed_run = suppressed_sarif.get("runs", [{}])[0]
+    if suppressed_run.get("results") != []:
+        fail("audit --format sarif emitted suppressed findings as active results")
+    summary = suppressed_run.get("properties", {}).get("summary", {})
+    if summary.get("total") != 0 or summary.get("suppressed") != 1:
+        fail("audit --format sarif did not preserve suppression summary")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
@@ -354,6 +437,7 @@ def main() -> int:
     validate_explicit_config_path(lucid)
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
+    validate_sarif_output(lucid)
     print("validate-evals: ok")
     return 0
 
