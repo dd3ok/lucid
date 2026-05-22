@@ -1137,26 +1137,40 @@ def finding_score_impact(finding: dict[str, Any]) -> int:
 
 
 def ensure_scoring_fields(audit_result: dict[str, Any]) -> dict[str, Any]:
-    for finding in audit_result.get("findings", []):
-        finding.setdefault("score_impact", finding_score_impact(finding))
-    for finding in audit_result.get("suppressed_findings", []):
-        finding.setdefault("score_impact", finding_score_impact(finding))
-
+    findings = audit_result.get("findings", [])
+    suppressed_findings = audit_result.get("suppressed_findings", [])
     summary = audit_result.setdefault("summary", {})
-    summary.setdefault(
-        "debt_score",
-        sum(
-            int(finding.get("score_impact", 0))
-            for finding in audit_result.get("findings", [])
-        ),
+
+    findings_have_scores = all(
+        isinstance(finding, dict) and "score_impact" in finding for finding in findings
     )
-    summary.setdefault(
-        "suppressed_debt_score",
-        sum(
-            int(finding.get("score_impact", 0))
-            for finding in audit_result.get("suppressed_findings", [])
-        ),
+    suppressed_have_scores = all(
+        isinstance(finding, dict) and "score_impact" in finding
+        for finding in suppressed_findings
     )
+    summary_has_scores = "debt_score" in summary and "suppressed_debt_score" in summary
+    if findings_have_scores and suppressed_have_scores and summary_has_scores:
+        return audit_result
+
+    for finding in findings:
+        if isinstance(finding, dict) and "score_impact" not in finding:
+            finding["score_impact"] = finding_score_impact(finding)
+    for finding in suppressed_findings:
+        if isinstance(finding, dict) and "score_impact" not in finding:
+            finding["score_impact"] = finding_score_impact(finding)
+
+    if "debt_score" not in summary:
+        summary["debt_score"] = sum(
+            int(finding.get("score_impact", 0))
+            for finding in findings
+            if isinstance(finding, dict)
+        )
+    if "suppressed_debt_score" not in summary:
+        summary["suppressed_debt_score"] = sum(
+            int(finding.get("score_impact", 0))
+            for finding in suppressed_findings
+            if isinstance(finding, dict)
+        )
     return audit_result
 
 
