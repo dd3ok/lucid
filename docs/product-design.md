@@ -56,6 +56,7 @@ The canonical skill source is `skills/lucid/`.
 - `SKILL.md` is the runtime router.
 - `references/` holds judgment rules.
 - `lucid.py` is a thin repo-level CLI wrapper.
+- `action.yml` is a report-only GitHub composite action wrapper.
 - `skills/lucid/scripts/lucid.py` performs deterministic checks.
 - `evals/` and `fixtures/` define regression behavior.
 - `.lucid/` contains generated reports and plans.
