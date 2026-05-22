@@ -70,6 +70,15 @@ Summary fields:
 | `manual_review` | number | Findings requiring manual review. |
 | `compatibility_protected` | number | `compatibility-risk` findings. |
 | `suppressed` | number | Findings suppressed by `lucid.ignore.json`. |
+| `debt_score` | number | Sum of active finding `score_impact` values. |
+| `suppressed_debt_score` | number | Sum of suppressed finding `score_impact` values. |
+
+Debt scores are deterministic informational metrics for comparison and
+reporting. They do not fail `verify`, apply changes, or drive deletion.
+Current finding weights are intentionally simple: `high` = 10, `medium` = 5,
+`low` = 2, with +3 for manual-review findings. `compatibility-risk` findings
+are capped at 3 because compatibility-protected content is not automatic
+cleanup debt.
 
 ## Finding
 
@@ -89,6 +98,7 @@ Every audit finding uses this shape:
 | `replacement_hint` | string or null | Suggested replacement direction, if available. |
 | `source_of_truth` | string or null | Canonical source pointer, if known. |
 | `confidence` | number | Heuristic confidence between `0` and `1`. |
+| `score_impact` | number | Deterministic contribution to summary `debt_score`. |
 | `requires_manual_review` | boolean | Whether the item needs manual review. |
 | `suppression` | object | Present only in `suppressed_findings`; includes the matched ignore entry. |
 
@@ -155,6 +165,7 @@ Result mapping:
 | `line_end` | `locations[0].physicalLocation.region.endLine` |
 | `id` | `properties.lucid_id` |
 | `suggested_action` | `properties.suggested_action` |
+| `score_impact` | `properties.score_impact` |
 
 ## Plan Markdown
 
@@ -177,6 +188,8 @@ The generated Markdown has this structure:
 - Root:
 - Files scanned:
 - Findings:
+- Debt score:
+- Suppressed debt score:
 - High severity:
 - Manual review:
 - Compatibility-protected:
@@ -194,6 +207,7 @@ The generated Markdown has this structure:
 - Current snippet:
 - Suggested action:
 - Confidence:
+- Score impact:
 - Manual review:
 - Replacement hint:
 - Source of truth:
@@ -249,6 +263,7 @@ Recommended action fields:
 | `reason` | string | Why the finding was reported. |
 | `suggested_action` | string | One cleanup action from the allowed action set. |
 | `confidence` | number | Heuristic confidence between `0` and `1`. |
+| `score_impact` | number | Finding contribution to summary `debt_score`. |
 | `requires_manual_review` | boolean | Whether the item needs manual review. |
 | `replacement_hint` | string or null | Suggested replacement direction, if available. |
 | `source_of_truth` | string or null | Canonical source pointer, if known. |

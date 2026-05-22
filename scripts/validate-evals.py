@@ -361,6 +361,91 @@ def validate_sarif_output(lucid: ModuleType) -> None:
         fail("audit --format sarif did not preserve suppression summary")
 
 
+def assert_scoring_consistent(audit: dict[str, object], label: str) -> None:
+    findings = audit.get("findings")
+    suppressed_findings = audit.get("suppressed_findings")
+    summary = audit.get("summary")
+    if not isinstance(findings, list) or not isinstance(suppressed_findings, list):
+        fail(f"{label} audit did not expose finding lists")
+    if not isinstance(summary, dict):
+        fail(f"{label} audit did not expose summary")
+
+    active_score = 0
+    for finding in findings:
+        score = finding.get("score_impact") if isinstance(finding, dict) else None
+        if not isinstance(score, int) or score < 0:
+            fail(f"{label} active finding is missing non-negative score_impact")
+        active_score += score
+
+    suppressed_score = 0
+    for finding in suppressed_findings:
+        score = finding.get("score_impact") if isinstance(finding, dict) else None
+        if not isinstance(score, int) or score < 0:
+            fail(f"{label} suppressed finding is missing non-negative score_impact")
+        suppressed_score += score
+
+    if summary.get("debt_score") != active_score:
+        fail(f"{label} summary.debt_score did not match active findings")
+    if summary.get("suppressed_debt_score") != suppressed_score:
+        fail(f"{label} summary.suppressed_debt_score did not match suppressed findings")
+
+
+def validate_debt_scoring(lucid: ModuleType) -> None:
+    clean = lucid.audit(ROOT / "fixtures" / "clean-project", output_format="json")
+    assert_scoring_consistent(clean, "clean-project")
+    if clean["summary"]["debt_score"] != 0 or clean["summary"]["suppressed_debt_score"] != 0:
+        fail("clean-project did not have zero debt scores")
+
+    unsafe = lucid.audit(ROOT / "fixtures" / "unsafe-context", output_format="json")
+    assert_scoring_consistent(unsafe, "unsafe-context")
+    if unsafe["findings"][0].get("score_impact") != 13:
+        fail("unsafe-context did not get expected high manual-review score")
+    if unsafe["summary"]["debt_score"] != 13:
+        fail("unsafe-context did not include expected debt_score")
+
+    terminal_audit = lucid.render_terminal_audit(unsafe)
+    if "Debt score: 13" not in terminal_audit:
+        fail("terminal audit did not include debt score")
+
+    compatibility = lucid.audit(
+        ROOT / "fixtures" / "compatibility-safety", output_format="json"
+    )
+    assert_scoring_consistent(compatibility, "compatibility-safety")
+    if compatibility["findings"][0].get("score_impact") != 3:
+        fail("compatibility-risk score was not capped")
+
+    suppressed = lucid.audit(ROOT / "fixtures" / "ignore-suppressions", output_format="json")
+    assert_scoring_consistent(suppressed, "ignore-suppressions")
+    if suppressed["summary"]["debt_score"] != 0:
+        fail("suppressed finding counted as active debt")
+    if suppressed["summary"]["suppressed_debt_score"] != 8:
+        fail("suppressed finding did not preserve suppressed_debt_score")
+
+    markdown_plan = lucid.render_plan_markdown(unsafe)
+    if "- Debt score: 13" not in markdown_plan:
+        fail("markdown plan did not include debt score")
+    if "- Score impact: 13" not in markdown_plan:
+        fail("markdown plan did not include finding score impact")
+
+    legacy_audit = json.loads(json.dumps(unsafe))
+    legacy_audit["summary"].pop("debt_score", None)
+    legacy_audit["summary"].pop("suppressed_debt_score", None)
+    for finding in legacy_audit["findings"]:
+        finding.pop("score_impact", None)
+    legacy_plan = lucid.render_plan_markdown(legacy_audit)
+    if "- Debt score: 13" not in legacy_plan:
+        fail("legacy audit payload did not get scoring fields for plan rendering")
+
+    plan_json = json.loads(lucid.render_plan_json(unsafe))
+    if plan_json["recommended_actions"][0].get("score_impact") != 13:
+        fail("plan JSON did not preserve score impact")
+
+    sarif = json.loads(lucid.render_sarif(unsafe))
+    result_properties = sarif["runs"][0]["results"][0]["properties"]
+    if result_properties.get("score_impact") != 13:
+        fail("SARIF did not preserve score impact")
+
+
 def validate_cli_wrapper() -> None:
     if not LUCID_WRAPPER.exists():
         fail("lucid.py CLI wrapper is missing")
@@ -400,6 +485,7 @@ def main() -> int:
             fail(f"{case_path.name} points to missing fixture {case['fixture']}")
 
         audit = lucid.audit(fixture, output_format="json")
+        assert_scoring_consistent(audit, case["name"])
         findings = audit["findings"]
         for finding in findings:
             action = finding.get("suggested_action")
@@ -462,6 +548,7 @@ def main() -> int:
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
+    validate_debt_scoring(lucid)
     validate_cli_wrapper()
     print("validate-evals: ok")
     return 0

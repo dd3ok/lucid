@@ -112,6 +112,13 @@ PLAN_COMPATIBILITY_NOTE = {
     ),
 }
 KNOWN_RULE_IDS = {rule.replace("_", "-") for rule in DEFAULT_CONFIG["rules"]}
+SEVERITY_SCORE_IMPACT = {
+    "high": 10,
+    "medium": 5,
+    "low": 2,
+}
+MANUAL_REVIEW_SCORE_IMPACT = 3
+COMPATIBILITY_RISK_SCORE_CAP = 3
 PATCH_ELIGIBLE_RULES = {
     "archive-autoload",
 }
@@ -1106,6 +1113,7 @@ def audit(
     findings.sort(key=lambda item: (item["path"], item["line_start"], item["rule"]))
     for index, finding in enumerate(findings, start=1):
         finding["id"] = f"LUCID-{index:04d}"
+        finding["score_impact"] = finding_score_impact(finding)
     active_findings, suppressed_findings = apply_suppressions(findings, suppressions)
 
     return {
@@ -1119,6 +1127,39 @@ def audit(
     }
 
 
+def finding_score_impact(finding: dict[str, Any]) -> int:
+    score = SEVERITY_SCORE_IMPACT.get(str(finding["severity"]), 0)
+    if finding["requires_manual_review"]:
+        score += MANUAL_REVIEW_SCORE_IMPACT
+    if finding["rule"] == "compatibility-risk":
+        return min(score, COMPATIBILITY_RISK_SCORE_CAP)
+    return score
+
+
+def ensure_scoring_fields(audit_result: dict[str, Any]) -> dict[str, Any]:
+    for finding in audit_result.get("findings", []):
+        finding.setdefault("score_impact", finding_score_impact(finding))
+    for finding in audit_result.get("suppressed_findings", []):
+        finding.setdefault("score_impact", finding_score_impact(finding))
+
+    summary = audit_result.setdefault("summary", {})
+    summary.setdefault(
+        "debt_score",
+        sum(
+            int(finding.get("score_impact", 0))
+            for finding in audit_result.get("findings", [])
+        ),
+    )
+    summary.setdefault(
+        "suppressed_debt_score",
+        sum(
+            int(finding.get("score_impact", 0))
+            for finding in audit_result.get("suppressed_findings", [])
+        ),
+    )
+    return audit_result
+
+
 def summarize_findings(
     findings: list[dict[str, Any]], suppressed_findings: list[dict[str, Any]] | None = None
 ) -> dict[str, int]:
@@ -1130,6 +1171,8 @@ def summarize_findings(
         "manual_review": 0,
         "compatibility_protected": 0,
         "suppressed": len(suppressed_findings or []),
+        "debt_score": 0,
+        "suppressed_debt_score": 0,
     }
     for finding in findings:
         severity = str(finding["severity"])
@@ -1139,6 +1182,9 @@ def summarize_findings(
             summary["manual_review"] += 1
         if finding["rule"] == "compatibility-risk":
             summary["compatibility_protected"] += 1
+        summary["debt_score"] += int(finding.get("score_impact", 0))
+    for finding in suppressed_findings or []:
+        summary["suppressed_debt_score"] += int(finding.get("score_impact", 0))
     return summary
 
 
@@ -1158,14 +1204,19 @@ def render_terminal_scan(result: dict[str, Any]) -> str:
 
 
 def render_terminal_audit(result: dict[str, Any]) -> str:
+    result = ensure_scoring_fields(result)
     lines = [
         "Lucid audit",
         f"Root: {result['root']}",
         f"Files scanned: {result['files_scanned']}",
         f"Findings: {result['summary']['total']}",
+        f"Debt score: {result['summary']['debt_score']}",
     ]
     if result["summary"].get("suppressed", 0):
         lines.append(f"Suppressed: {result['summary']['suppressed']}")
+        lines.append(
+            f"Suppressed debt score: {result['summary']['suppressed_debt_score']}"
+        )
     lines.append("")
     for finding in result["findings"]:
         lines.append(
@@ -1177,6 +1228,7 @@ def render_terminal_audit(result: dict[str, Any]) -> str:
 
 
 def render_plan_markdown(audit_result: dict[str, Any]) -> str:
+    audit_result = ensure_scoring_fields(audit_result)
     summary = audit_result["summary"]
     lines = [
         "# Lucid Context Hygiene Plan",
@@ -1186,6 +1238,8 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
         f"- Root: `{audit_result['root']}`",
         f"- Files scanned: {audit_result['files_scanned']}",
         f"- Findings: {summary['total']}",
+        f"- Debt score: {summary['debt_score']}",
+        f"- Suppressed debt score: {summary.get('suppressed_debt_score', 0)}",
         f"- High severity: {summary['high']}",
         f"- Manual review: {summary['manual_review']}",
         f"- Compatibility-protected: {summary['compatibility_protected']}",
@@ -1218,6 +1272,7 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
                 "",
                 f"- Suggested action: `{finding['suggested_action']}`",
                 f"- Confidence: {finding['confidence']:.2f}",
+                f"- Score impact: {finding['score_impact']}",
                 f"- Manual review: {str(finding['requires_manual_review']).lower()}",
             ]
         )
@@ -1244,6 +1299,7 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
 
 
 def render_plan_json(audit_result: dict[str, Any]) -> str:
+    audit_result = ensure_scoring_fields(audit_result)
     actions: list[dict[str, Any]] = []
     for finding in audit_result["findings"]:
         action = {
@@ -1257,6 +1313,7 @@ def render_plan_json(audit_result: dict[str, Any]) -> str:
             "reason": finding["reason"],
             "suggested_action": finding["suggested_action"],
             "confidence": finding["confidence"],
+            "score_impact": finding["score_impact"],
             "requires_manual_review": finding["requires_manual_review"],
             "replacement_hint": finding.get("replacement_hint"),
             "source_of_truth": finding.get("source_of_truth"),
@@ -1288,6 +1345,7 @@ def sarif_level(severity: str) -> str:
 
 
 def render_sarif(audit_result: dict[str, Any]) -> str:
+    audit_result = ensure_scoring_fields(audit_result)
     findings = audit_result["findings"]
     rules = [
         {
@@ -1321,6 +1379,7 @@ def render_sarif(audit_result: dict[str, Any]) -> str:
                     "suggested_action": finding["suggested_action"],
                     "requires_manual_review": finding["requires_manual_review"],
                     "confidence": finding["confidence"],
+                    "score_impact": finding["score_impact"],
                     "replacement_hint": finding.get("replacement_hint"),
                     "source_of_truth": finding.get("source_of_truth"),
                 },
