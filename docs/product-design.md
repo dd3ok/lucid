@@ -32,8 +32,8 @@ Commands:
 - `plan`
 - `verify`
 
-v0.2 adds `suggest` for diff-only patch suggestions and SARIF audit output
-under `.lucid/` without applying changes.
+v0.2 adds a repo-level CLI wrapper, `suggest` for diff-only patch suggestions,
+and SARIF audit output under `.lucid/` without applying changes.
 
 Constraints:
 
@@ -54,6 +54,7 @@ The canonical skill source is `skills/lucid/`.
 
 - `SKILL.md` is the runtime router.
 - `references/` holds judgment rules.
+- `lucid.py` is a thin repo-level CLI wrapper.
 - `skills/lucid/scripts/lucid.py` performs deterministic checks.
 - `evals/` and `fixtures/` define regression behavior.
 - `.lucid/` contains generated reports and plans.

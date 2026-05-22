@@ -17,7 +17,7 @@ the target root if present.
 Produced by:
 
 ```bash
-python3 skills/lucid/scripts/lucid.py scan --root . --format json
+python3 lucid.py scan --root . --format json
 ```
 
 Top-level fields:
@@ -44,7 +44,7 @@ File metadata:
 Produced by:
 
 ```bash
-python3 skills/lucid/scripts/lucid.py audit --root . --format json
+python3 lucid.py audit --root . --format json
 ```
 
 Top-level fields:
@@ -132,7 +132,7 @@ when Lucid generates the audit payload.
 Produced by:
 
 ```bash
-python3 skills/lucid/scripts/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
+python3 lucid.py audit --root . --format sarif --out .lucid/audit.sarif
 ```
 
 SARIF output uses version `2.1.0` and is intended for report-only CI and code
@@ -161,7 +161,7 @@ Result mapping:
 Produced by:
 
 ```bash
-python3 skills/lucid/scripts/lucid.py plan --root . --out .lucid/plan.md
+python3 lucid.py plan --root . --out .lucid/plan.md
 ```
 
 Markdown is the default plan format. It can also be selected explicitly with
@@ -217,7 +217,7 @@ only applies when `plan` generates its own audit.
 Produced by:
 
 ```bash
-python3 skills/lucid/scripts/lucid.py plan --root . --format json --out .lucid/plan.json
+python3 lucid.py plan --root . --format json --out .lucid/plan.json
 ```
 
 When `--out` is omitted, JSON plans are written to `.lucid/plan.json`.
@@ -260,7 +260,7 @@ Recommended action fields:
 Produced by:
 
 ```bash
-python3 skills/lucid/scripts/lucid.py suggest --root . --out .lucid/suggested.patch
+python3 lucid.py suggest --root . --out .lucid/suggested.patch
 ```
 
 When `--out` is omitted, patch suggestions are written to
@@ -279,7 +279,7 @@ root, matching `plan --audit`.
 Produced by:
 
 ```bash
-python3 skills/lucid/scripts/lucid.py verify --root . --strict
+python3 lucid.py verify --root . --strict
 ```
 
 Fields:

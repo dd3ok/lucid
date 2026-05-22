@@ -77,11 +77,10 @@ ln -s /path/to/lucid/skills/lucid ~/.openclaw/skills/lucid
 From a target repository:
 
 ```bash
-python3 /path/to/lucid/skills/lucid/scripts/lucid.py scan --root . --format terminal
-python3 /path/to/lucid/skills/lucid/scripts/lucid.py audit --root . --format terminal
-python3 /path/to/lucid/skills/lucid/scripts/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
-python3 /path/to/lucid/skills/lucid/scripts/lucid.py plan --root . --out .lucid/plan.md
-python3 /path/to/lucid/skills/lucid/scripts/lucid.py suggest --root . --out .lucid/suggested.patch
+python3 /path/to/lucid/lucid.py scan --root . --format terminal
+python3 /path/to/lucid/lucid.py audit --root . --format terminal
+python3 /path/to/lucid/lucid.py plan --root . --out .lucid/plan.md
+python3 /path/to/lucid/lucid.py suggest --root . --out .lucid/suggested.patch
 ```
 
 Lucid is read-only by default. It writes generated reports, plans, and patch
@@ -92,6 +91,14 @@ explicit config file inside the target repository.
 
 Use `lucid.ignore.json` at the target repository root to suppress reviewed
 false positives by `rule`, `path`, and required `reason`.
+
+## CI Reporting
+
+Generate report-only SARIF output for code scanning or CI artifacts:
+
+```bash
+python3 /path/to/lucid/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
+```
 
 ## Package
 
@@ -121,6 +128,7 @@ For direct terminal usage, see Quick Start.
 
 - `SKILL.md` is a short router.
 - `references/` contains judgment rules.
+- `lucid.py` is a thin CLI wrapper.
 - `skills/lucid/scripts/lucid.py` performs deterministic checks.
 - `evals/fixtures` prevent regressions.
 - `.lucid/plan.md` is generated before any edit.
