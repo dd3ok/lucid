@@ -19,7 +19,7 @@
 - [ ] `LICENSE` file is present and contains the correct MIT license text.
 - [ ] `README.md` status matches the release state.
 - [ ] `SECURITY.md` still states the read-only, no-network, no-LLM, no env-read, and no auto-apply constraints.
-- [ ] `action.yml` remains report-only and does not upload artifacts, upload SARIF, apply patches, or run project scripts.
+- [ ] `action.yml` remains report-only, keeps `root` inside `GITHUB_WORKSPACE`, and does not upload artifacts, upload SARIF, apply patches, or run project scripts.
 - [ ] No generated `.lucid/` reports or `dist/` package archives are committed.
 - [ ] GitHub repository description and topics are reviewed before public release.
 

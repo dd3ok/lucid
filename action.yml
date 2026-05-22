@@ -37,6 +37,16 @@ runs:
       run: |
         set -euo pipefail
 
+        workspace="${GITHUB_WORKSPACE:-$PWD}"
+        workspace_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$workspace")"
+        root_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$LUCID_ROOT")"
+
+        case "$root_abs" in
+          "$workspace_abs"|"$workspace_abs"/*) ;;
+          *) echo "root must stay inside GITHUB_WORKSPACE" >&2; exit 1 ;;
+        esac
+
+        LUCID_ROOT="$root_abs"
         artifact_dir="$LUCID_ROOT/.lucid"
         mkdir -p "$artifact_dir"
 
@@ -45,9 +55,9 @@ runs:
           config_arg=(--config "$LUCID_CONFIG")
         fi
 
-        python3 "${{ github.action_path }}/lucid.py" audit --root "$LUCID_ROOT" "${config_arg[@]}" --format sarif --out .lucid/audit.sarif > /dev/null
-        python3 "${{ github.action_path }}/lucid.py" plan --root "$LUCID_ROOT" "${config_arg[@]}" --format json --out .lucid/plan.json > /dev/null
-        python3 "${{ github.action_path }}/lucid.py" audit --root "$LUCID_ROOT" "${config_arg[@]}" --format terminal --out .lucid/audit.txt > /dev/null
+        python3 "${{ github.action_path }}/lucid.py" audit --root "$LUCID_ROOT" "${config_arg[@]}" --format sarif --out "$artifact_dir/audit.sarif" > /dev/null
+        python3 "${{ github.action_path }}/lucid.py" plan --root "$LUCID_ROOT" "${config_arg[@]}" --format json --out "$artifact_dir/plan.json" > /dev/null
+        python3 "${{ github.action_path }}/lucid.py" audit --root "$LUCID_ROOT" "${config_arg[@]}" --format terminal --out "$artifact_dir/audit.txt" > /dev/null
 
         if [ -n "${GITHUB_OUTPUT:-}" ]; then
           {
