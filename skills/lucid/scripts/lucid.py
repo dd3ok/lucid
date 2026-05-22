@@ -1204,13 +1204,13 @@ def summarize_findings(
 
 def render_concise_summary(summary: dict[str, Any]) -> str:
     return (
-        f"Summary: active={summary['total']} "
-        f"debt={summary['debt_score']} "
-        f"high={summary['high']} "
-        f"medium={summary['medium']} "
-        f"low={summary['low']} "
-        f"manual_review={summary['manual_review']} "
-        f"compatibility_protected={summary['compatibility_protected']} "
+        f"Summary: active={summary.get('total', 0)} "
+        f"debt={summary.get('debt_score', 0)} "
+        f"high={summary.get('high', 0)} "
+        f"medium={summary.get('medium', 0)} "
+        f"low={summary.get('low', 0)} "
+        f"manual_review={summary.get('manual_review', 0)} "
+        f"compatibility_protected={summary.get('compatibility_protected', 0)} "
         f"suppressed={summary.get('suppressed', 0)} "
         f"suppressed_debt={summary.get('suppressed_debt_score', 0)}"
     )
