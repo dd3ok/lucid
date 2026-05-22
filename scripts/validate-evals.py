@@ -406,6 +406,19 @@ def validate_debt_scoring(lucid: ModuleType) -> None:
     terminal_audit = lucid.render_terminal_audit(unsafe)
     if "Debt score: 13" not in terminal_audit:
         fail("terminal audit did not include debt score")
+    expected_summary = (
+        "Summary: active=1 debt=13 high=1 medium=0 low=0 manual_review=1 "
+        "compatibility_protected=0 suppressed=0 suppressed_debt=0"
+    )
+    if expected_summary not in terminal_audit:
+        fail("terminal audit did not include concise score summary")
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(["audit", "--root", str(ROOT / "fixtures" / "unsafe-context")])
+    if exit_code != 0:
+        fail("audit terminal summary returned non-zero exit code")
+    if expected_summary not in stdout.getvalue():
+        fail("audit default terminal output did not include concise summary")
 
     compatibility = lucid.audit(
         ROOT / "fixtures" / "compatibility-safety", output_format="json"
@@ -420,6 +433,13 @@ def validate_debt_scoring(lucid: ModuleType) -> None:
         fail("suppressed finding counted as active debt")
     if suppressed["summary"]["suppressed_debt_score"] != 8:
         fail("suppressed finding did not preserve suppressed_debt_score")
+    suppressed_terminal = lucid.render_terminal_audit(suppressed)
+    expected_suppressed_summary = (
+        "Summary: active=0 debt=0 high=0 medium=0 low=0 manual_review=0 "
+        "compatibility_protected=0 suppressed=1 suppressed_debt=8"
+    )
+    if expected_suppressed_summary not in suppressed_terminal:
+        fail("terminal audit did not summarize suppressed debt")
 
     markdown_plan = lucid.render_plan_markdown(unsafe)
     if "- Debt score: 13" not in markdown_plan:

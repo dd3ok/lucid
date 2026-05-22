@@ -152,7 +152,8 @@ See [docs/product-design.md](docs/product-design.md#roadmap) for the detailed
 roadmap.
 
 - v0.1: read-only scanner/planner
-- v0.2: skill packaging, CLI wrapper, basic scoring, diff-only suggestions, SARIF
+- v0.2: skill packaging, CLI wrapper, basic scoring, terminal summaries,
+  diff-only suggestions, SARIF
 - v0.3: policy packs and source graph
 - v1.0: stable schemas, GitHub Action productization, marketplace packaging,
   optional adapters

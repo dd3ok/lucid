@@ -32,9 +32,9 @@ Commands:
 - `plan`
 - `verify`
 
-v0.2 adds a repo-level CLI wrapper, basic debt scoring, `suggest` for diff-only
-patch suggestions, and SARIF audit output under `.lucid/` without applying
-changes.
+v0.2 adds a repo-level CLI wrapper, basic debt scoring, concise terminal
+summaries, `suggest` for diff-only patch suggestions, and SARIF audit output
+under `.lucid/` without applying changes.
 
 Constraints:
 
@@ -127,6 +127,7 @@ positive source-of-truth pointers, validators, or eval fixtures.
 This section is the detailed roadmap source of truth for public docs.
 
 - v0.1: read-only skill pack, deterministic audit, cleanup plans, evals, CI.
-- v0.2: skill packaging, CLI wrapper, basic scoring, diff-only suggestions, SARIF.
+- v0.2: skill packaging, CLI wrapper, basic scoring, terminal summaries,
+  diff-only suggestions, SARIF.
 - v0.3: policy packs, source graph, redaction preview, provenance, migration helpers.
 - v1.0: stable schemas, GitHub Action productization, marketplace packaging, optional adapters.

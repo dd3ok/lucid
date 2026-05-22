@@ -80,6 +80,18 @@ Current finding weights are intentionally simple: `high` = 10, `medium` = 5,
 are capped at 3 because compatibility-protected content is not automatic
 cleanup debt.
 
+Terminal audit output includes a concise single-line summary before detailed
+findings:
+
+```text
+Summary: active=1 debt=13 high=1 medium=0 low=0 manual_review=1 compatibility_protected=0 suppressed=0 suppressed_debt=0
+```
+
+The line mirrors audit `summary` fields and contains summary metrics only:
+counts plus debt score totals. It is informational, does not change exit codes,
+and is emitted only for terminal audit output, not JSON, SARIF, plan, or patch
+artifacts.
+
 ## Finding
 
 Every audit finding uses this shape:
