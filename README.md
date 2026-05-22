@@ -103,6 +103,8 @@ Generate report-only SARIF output for code scanning or CI artifacts:
 python3 /path/to/lucid/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
 ```
 
+GitHub Actions example: [docs/github-actions.md](docs/github-actions.md)
+
 ## Package
 
 Build a distributable skill archive:
@@ -141,6 +143,8 @@ More detail: [docs/design-rationale.md](docs/design-rationale.md)
 Product contract: [docs/product-design.md](docs/product-design.md)
 
 Output schema: [docs/output-schema.md](docs/output-schema.md)
+
+GitHub Actions usage: [docs/github-actions.md](docs/github-actions.md)
 
 Security policy: [SECURITY.md](SECURITY.md)
 
