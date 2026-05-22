@@ -6,6 +6,8 @@
 
 - GitHub Actions usage guide for report-only SARIF, JSON plan, step summary,
   and artifact upload workflows.
+- Report-only GitHub composite action wrapper for SARIF, JSON plan, and step
+  summary generation.
 
 ## v0.2.0 - 2026-05-22
 

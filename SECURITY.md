@@ -22,6 +22,11 @@ Lucid must not:
 - write scanner/planner reports, SARIF reports, or patch suggestions outside `.lucid/`
 - write skill package archives outside `dist/`
 
+The GitHub composite action wrapper uses GitHub runner-provided files such as
+`GITHUB_OUTPUT` and `GITHUB_STEP_SUMMARY` only to publish action outputs and a
+step summary. The Lucid Python runtime still does not read repository
+environment values, secrets, or credential stores.
+
 Generated JSON and Markdown reports may include short snippets. Unsafe snippets
 are redacted before JSON or Markdown rendering when Lucid detects secret-like
 or hidden unsafe content. SARIF reports omit snippets.

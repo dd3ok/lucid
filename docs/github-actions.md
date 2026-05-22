@@ -1,12 +1,49 @@
 # GitHub Actions Usage
 
-Lucid can run in GitHub Actions without a dedicated wrapper action. Keep the
-workflow report-only: generate SARIF, generate a JSON plan, write a concise step
-summary, and upload artifacts only when your workflow explicitly opts in.
+Lucid can run in GitHub Actions through its composite action wrapper or directly
+without a dedicated wrapper action. Keep the workflow report-only: generate
+SARIF, generate a JSON plan, write a concise step summary, and upload artifacts
+only when your workflow explicitly opts in.
 
-This guide assumes the target repository has `lucid.py` at its root or vendors
-Lucid at a known path. If Lucid lives elsewhere, replace `python3 lucid.py` with
-that path.
+For direct command workflows, this guide assumes the target repository has
+`lucid.py` at its root or vendors Lucid at a known path. If Lucid lives
+elsewhere, replace `python3 lucid.py` with that path.
+
+## Composite Action Wrapper
+
+Use the wrapper when the workflow can reference this repository as an action.
+The action runs Lucid from the action checkout, writes reports under `.lucid/`,
+suppresses report body stdout in the workflow log, and does not upload SARIF or
+artifacts by itself.
+
+```yaml
+name: lucid
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lucid:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Lucid
+        id: lucid
+        uses: dd3ok/lucid@main
+        with:
+          root: .
+```
+
+For production workflows, pin the action reference to a release tag or
+full-length commit SHA according to your organization's policy.
+
+The wrapper exposes generated paths as action outputs: `sarif`, `plan-json`,
+and `terminal-audit`.
 
 ## Minimal Report-Only Workflow
 

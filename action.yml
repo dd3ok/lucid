@@ -1,0 +1,68 @@
+name: Lucid
+description: Report-only context hygiene audit, JSON plan, and GitHub step summary.
+branding:
+  icon: search
+  color: gray-dark
+
+inputs:
+  root:
+    description: Target repository root to audit.
+    required: false
+    default: "."
+  config:
+    description: Optional Lucid config path inside the target root.
+    required: false
+    default: ""
+
+outputs:
+  sarif:
+    description: Path to the generated SARIF report.
+    value: ${{ steps.run-lucid.outputs.sarif }}
+  plan-json:
+    description: Path to the generated JSON cleanup plan.
+    value: ${{ steps.run-lucid.outputs.plan-json }}
+  terminal-audit:
+    description: Path to the generated terminal audit text.
+    value: ${{ steps.run-lucid.outputs.terminal-audit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run Lucid
+      id: run-lucid
+      shell: bash
+      env:
+        LUCID_ROOT: ${{ inputs.root }}
+        LUCID_CONFIG: ${{ inputs.config }}
+      run: |
+        set -euo pipefail
+
+        artifact_dir="$LUCID_ROOT/.lucid"
+        mkdir -p "$artifact_dir"
+
+        config_arg=()
+        if [ -n "$LUCID_CONFIG" ]; then
+          config_arg=(--config "$LUCID_CONFIG")
+        fi
+
+        python3 "${{ github.action_path }}/lucid.py" audit --root "$LUCID_ROOT" "${config_arg[@]}" --format sarif --out .lucid/audit.sarif > /dev/null
+        python3 "${{ github.action_path }}/lucid.py" plan --root "$LUCID_ROOT" "${config_arg[@]}" --format json --out .lucid/plan.json > /dev/null
+        python3 "${{ github.action_path }}/lucid.py" audit --root "$LUCID_ROOT" "${config_arg[@]}" --format terminal --out .lucid/audit.txt > /dev/null
+
+        if [ -n "${GITHUB_OUTPUT:-}" ]; then
+          {
+            echo "sarif=$artifact_dir/audit.sarif"
+            echo "plan-json=$artifact_dir/plan.json"
+            echo "terminal-audit=$artifact_dir/audit.txt"
+          } >> "$GITHUB_OUTPUT"
+        fi
+
+        if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+          {
+            echo "## Lucid"
+            grep '^Summary:' "$artifact_dir/audit.txt" || true
+            echo ""
+            echo "- SARIF: $artifact_dir/audit.sarif"
+            echo "- Plan JSON: $artifact_dir/plan.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
