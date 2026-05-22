@@ -194,6 +194,14 @@ def validate_openai_yaml() -> None:
         fail("agents/openai.yaml interface.default_prompt must mention $lucid")
 
 
+def read_lucid_script_version() -> str:
+    text = LUCID_SCRIPT.read_text(encoding="utf-8")
+    match = re.search(r"^VERSION\s*=\s*['\"]([^'\"]+)['\"]", text, re.MULTILINE)
+    if not match:
+        fail("skills/lucid/scripts/lucid.py is missing VERSION or has an unexpected format")
+    return match.group(1)
+
+
 def main() -> int:
     if not SKILL.exists():
         fail("skills/lucid/SKILL.md is missing")
@@ -205,6 +213,12 @@ def main() -> int:
     frontmatter = frontmatter_text(text)
     if fields.get("name") != "lucid":
         fail("frontmatter name must be lucid")
+    script_version = read_lucid_script_version()
+    if fields.get("version") != script_version:
+        fail(
+            f"frontmatter version ({fields.get('version')}) must match "
+            f"skills/lucid/scripts/lucid.py VERSION ({script_version})"
+        )
     description = fields.get("description", "")
     if not description:
         fail("frontmatter description is missing")

@@ -24,7 +24,7 @@ Top-level fields:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `version` | string | Lucid tool version; not a separate schema version in v0.1. |
+| `version` | string | Lucid tool version; not a separate schema version before v1.0. |
 | `root` | string | Absolute target repository root. |
 | `files_scanned` | number | Count of discovered context surface files. |
 | `files` | array | File metadata records. |
@@ -51,7 +51,7 @@ Top-level fields:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `version` | string | Lucid tool version; not a separate schema version in v0.1. |
+| `version` | string | Lucid tool version; not a separate schema version before v1.0. |
 | `root` | string | Absolute target repository root. |
 | `generated_at` | string | UTC ISO-8601 timestamp. |
 | `files_scanned` | number | Count of discovered context surface files. |

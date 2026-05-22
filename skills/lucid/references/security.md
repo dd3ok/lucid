@@ -1,6 +1,7 @@
 # Security
 
-Lucid v0.1 is a scanner and planner.
+Lucid v0.2 is a read-only scanner, planner, reporter, and review-only patch
+suggestion tool.
 
 ## Allowed
 
@@ -9,6 +10,8 @@ Lucid v0.1 is a scanner and planner.
 - write skill package archives to `dist/`
 - print terminal output
 - emit JSON and Markdown plans
+- emit SARIF reports
+- emit review-only patch suggestions
 
 ## Forbidden
 
@@ -19,6 +22,6 @@ Lucid v0.1 is a scanner and planner.
 - destructive shell commands
 - auto-deleting files
 - auto-applying patches
-- writing scanner/planner output outside `.lucid/`
+- writing generated reports or patch suggestions outside `.lucid/`
 - writing skill package archives outside `dist/`
 - executing external project scripts

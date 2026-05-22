@@ -4,9 +4,34 @@
 
 ### Added
 
+- Nothing yet.
+
+## v0.2.0 - 2026-05-22
+
+### Added
+
 - `scripts/package-skill.py` for building `dist/lucid-skill.zip` from the
   canonical `skills/lucid/` folder.
 - Package validation for required skill files and archive safety constraints.
+- Repo-level `lucid.py` CLI wrapper for cloned repository usage.
+- Explicit `--config` support for `scan`, `audit`, `plan`, `suggest`, and
+  `verify` with target-root path constraints.
+- JSON plan output via `plan --format json`.
+- `lucid.ignore.json` suppressions with required review reasons.
+- Diff-only patch suggestions via `suggest`.
+- SARIF 2.1.0 report-only output via `audit --format sarif`.
+- Deterministic debt scoring with `score_impact`, `debt_score`, and
+  `suppressed_debt_score`.
+- Concise terminal audit summary line.
+
+### Security
+
+- Scanner reports, planner reports, SARIF reports, and patch suggestions remain
+  constrained to `.lucid/`.
+- Skill package archives remain constrained to `dist/`.
+- SARIF reports omit snippets.
+- Lucid continues to avoid auto-apply, auto-delete, network calls, LLM calls,
+  environment value reads, credential reads, and project script execution.
 
 ## v0.1.0 - 2026-05-20
 

@@ -13,18 +13,18 @@ belong in eval fixtures.
 - `skills/lucid/references/` holds retention, cleanup, safety, and taxonomy
   criteria.
 - `skills/lucid/scripts/lucid.py` provides read-only scanning, auditing,
-  planning, and verification.
+  planning, reporting, review-only patch suggestions, and verification.
 - `evals/behavior-cases` and `fixtures` define behavior before implementation
   changes.
 - `.lucid/` is the generated report and plan directory.
 - `dist/` is used only for explicit skill package archives.
 
-## v0.1 Boundaries
+## v0.x Boundaries
 
-Lucid v0.1 is intentionally conservative. It does not call networks, call LLMs,
+Lucid v0.x is intentionally conservative. It does not call networks, call LLMs,
 read environment variable values, read credential stores, execute project
-scripts, delete files, apply patches, or write scanner/planner output outside
-`.lucid/`.
+scripts, delete files, apply patches, or write generated reports or patch
+suggestions outside `.lucid/`.
 
 JSON config is used because the Python standard library can parse JSON without
 an extra dependency.
