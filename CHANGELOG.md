@@ -4,7 +4,8 @@
 
 ### Added
 
-- Nothing yet.
+- GitHub Actions usage guide for report-only SARIF, JSON plan, step summary,
+  and artifact upload workflows.
 
 ## v0.2.0 - 2026-05-22
 
