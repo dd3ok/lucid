@@ -4,7 +4,8 @@
 
 ### Added
 
-- Nothing yet.
+- GitHub Actions guide now documents action repository access requirements for
+  private Lucid checkouts.
 
 ## v0.2.1 - 2026-05-23
 
