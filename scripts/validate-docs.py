@@ -10,7 +10,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GITHUB_ACTIONS_DOC = ROOT / "docs" / "github-actions.md"
 README = ROOT / "README.md"
-ACTION = ROOT / "action.yml"
 
 
 def fail(message: str) -> None:
@@ -43,11 +42,12 @@ def validate_github_actions_doc() -> None:
 
     text = GITHUB_ACTIONS_DOC.read_text(encoding="utf-8")
     required = [
-        "without a dedicated wrapper action",
+        "direct Python script execution",
+        "checkout or vendor Lucid",
         "mkdir -p .lucid",
-        "python3 lucid.py audit --root . --format sarif --out .lucid/audit.sarif",
-        "python3 lucid.py plan --root . --format json --out .lucid/plan.json",
-        "python3 lucid.py audit --root . --format terminal | tee .lucid/audit.txt",
+        "python3 .lucid-tool/lucid.py audit --root . --format sarif --out .lucid/audit.sarif",
+        "python3 .lucid-tool/lucid.py plan --root . --format json --out .lucid/plan.json",
+        "python3 .lucid-tool/lucid.py audit --root . --format terminal | tee .lucid/audit.txt",
         "$GITHUB_STEP_SUMMARY",
         "security-events: write",
         "github/codeql-action/upload-sarif",
@@ -56,13 +56,9 @@ def validate_github_actions_doc() -> None:
         "Lucid does not apply patches",
         "run project scripts",
         "Artifact upload and SARIF upload are GitHub workflow choices",
-        "root must stay inside `GITHUB_WORKSPACE`",
-        "action repository must be accessible",
-        "this repository is private",
-        "direct command workflow with a vendored Lucid",
-        "${{ steps.lucid.outputs.sarif }}",
-        "${{ steps.lucid.outputs['plan-json'] }}",
-        "${{ steps.lucid.outputs['terminal-audit'] }}",
+        "The composite action in `action.yml` is experimental",
+        "not the primary CI surface",
+        "direct script workflow",
     ]
     for needle in required:
         require_text(text, needle, "docs/github-actions.md")
@@ -74,6 +70,7 @@ def validate_github_actions_doc() -> None:
         "curl ",
         "pip install",
         "npm ",
+        "uses: dd3ok/lucid@",
     ]
     for needle in forbidden:
         forbid_text(text, needle, "docs/github-actions.md")
@@ -96,45 +93,8 @@ def validate_github_actions_doc() -> None:
     require_text(readme, "docs/github-actions.md", "README.md")
 
 
-def validate_action_wrapper() -> None:
-    if not ACTION.exists():
-        fail("action.yml is missing")
-
-    text = ACTION.read_text(encoding="utf-8")
-    required = [
-        "using: composite",
-        "python3 \"${{ github.action_path }}/lucid.py\" audit --root",
-        "--format sarif --out \"$artifact_dir/audit.sarif\" > /dev/null",
-        "python3 \"${{ github.action_path }}/lucid.py\" plan --root",
-        "--format json --out \"$artifact_dir/plan.json\" > /dev/null",
-        "python3 \"${{ github.action_path }}/lucid.py\" audit --root",
-        "--format terminal --out \"$artifact_dir/audit.txt\" > /dev/null",
-        "GITHUB_WORKSPACE",
-        "root must stay inside GITHUB_WORKSPACE",
-        "$GITHUB_STEP_SUMMARY",
-    ]
-    for needle in required:
-        require_text(text, needle, "action.yml")
-
-    forbidden = [
-        "git apply",
-        "curl ",
-        "pip install",
-        "npm ",
-        "upload-sarif",
-        "upload-artifact",
-        ".github/workflows/",
-        ".github/actions/",
-        "| tee",
-    ]
-    for needle in forbidden:
-        forbid_text(text, needle, "action.yml")
-    forbid_command(text, "gh", "action.yml")
-
-
 def main() -> int:
     validate_github_actions_doc()
-    validate_action_wrapper()
     print("validate-docs: ok")
     return 0
 

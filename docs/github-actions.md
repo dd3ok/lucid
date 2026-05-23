@@ -1,55 +1,14 @@
 # GitHub Actions Usage
 
-Lucid can run in GitHub Actions through its composite action wrapper or directly
-without a dedicated wrapper action. Keep the workflow report-only: generate
-SARIF, generate a JSON plan, write a concise step summary, and upload artifacts
-only when your workflow explicitly opts in.
+Lucid's recommended CI path is direct Python script execution after you
+checkout or vendor Lucid. Keep the workflow report-only: generate SARIF,
+generate a JSON plan, write a concise step summary, and upload artifacts only
+when your workflow explicitly opts in.
 
-For direct command workflows, this guide assumes the target repository has
-`lucid.py` at its root or vendors Lucid at a known path. If Lucid lives
-elsewhere, replace `python3 lucid.py` with that path.
-
-## Composite Action Wrapper
-
-Use the wrapper when the workflow can reference this repository as an action.
-The action runs Lucid from the action checkout, writes reports under `.lucid/`,
-suppresses report body stdout in the workflow log, and does not upload SARIF or
-artifacts by itself.
-The `root` input is constrained so the root must stay inside `GITHUB_WORKSPACE`.
-
-The action repository must be accessible to the workflow that references it. If
-this repository is private, configure GitHub Actions access for the intended
-consumer repositories, or use the direct command workflow with a vendored Lucid
-checkout instead.
-
-```yaml
-name: lucid
-
-on:
-  pull_request:
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  lucid:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Lucid
-        id: lucid
-        uses: dd3ok/lucid@main
-        with:
-          root: .
-```
-
-For production workflows, pin the action reference to a release tag or
-full-length commit SHA according to your organization's policy.
-
-The wrapper exposes generated paths as action outputs: `sarif`, `plan-json`,
-and `terminal-audit`.
+The examples below check Lucid out under `.lucid-tool/`. If you vendor Lucid in
+the target repository, replace `python3 .lucid-tool/lucid.py` with that path.
+If the Lucid repository is private, use normal checkout credentials or vendor
+the tool in the target repository.
 
 ## Minimal Report-Only Workflow
 
@@ -67,14 +26,22 @@ jobs:
   lucid:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Lucid
+        uses: actions/checkout@v4
+        with:
+          repository: dd3ok/lucid
+          ref: v0.2.1
+          path: .lucid-tool
 
       - name: Run Lucid audit
         run: |
           mkdir -p .lucid
-          python3 lucid.py audit --root . --format sarif --out .lucid/audit.sarif
-          python3 lucid.py plan --root . --format json --out .lucid/plan.json
-          python3 lucid.py audit --root . --format terminal | tee .lucid/audit.txt
+          python3 .lucid-tool/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
+          python3 .lucid-tool/lucid.py plan --root . --format json --out .lucid/plan.json
+          python3 .lucid-tool/lucid.py audit --root . --format terminal | tee .lucid/audit.txt
 
       - name: Write Lucid summary
         run: |
@@ -108,16 +75,16 @@ permissions:
 - name: Upload SARIF
   uses: github/codeql-action/upload-sarif@v3
   with:
-    sarif_file: ${{ steps.lucid.outputs.sarif }}
+    sarif_file: .lucid/audit.sarif
 
 - name: Upload Lucid artifacts
   uses: actions/upload-artifact@v4
   with:
     name: lucid
     path: |
-      ${{ steps.lucid.outputs.sarif }}
-      ${{ steps.lucid.outputs['plan-json'] }}
-      ${{ steps.lucid.outputs['terminal-audit'] }}
+      .lucid/audit.sarif
+      .lucid/plan.json
+      .lucid/audit.txt
 ```
 
 ## Optional Config
@@ -126,10 +93,16 @@ Use `--config` when the target repository keeps Lucid policy in a non-default
 config file inside the target root:
 
 ```bash
-python3 lucid.py audit --root . --config .github/lucid.config.json --format sarif --out .lucid/audit.sarif
-python3 lucid.py plan --root . --config .github/lucid.config.json --format json --out .lucid/plan.json
-python3 lucid.py audit --root . --config .github/lucid.config.json --format terminal
+python3 .lucid-tool/lucid.py audit --root . --config .github/lucid.config.json --format sarif --out .lucid/audit.sarif
+python3 .lucid-tool/lucid.py plan --root . --config .github/lucid.config.json --format json --out .lucid/plan.json
+python3 .lucid-tool/lucid.py audit --root . --config .github/lucid.config.json --format terminal
 ```
+
+## Experimental Composite Action
+
+The composite action in `action.yml` is experimental and not the primary CI surface.
+The recommended CI path is the direct script workflow above. Revisit the wrapper
+only if direct-script CI usage proves insufficient.
 
 ## Safety Notes
 

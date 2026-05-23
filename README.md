@@ -104,8 +104,8 @@ python3 /path/to/lucid/lucid.py audit --root . --format sarif --out .lucid/audit
 ```
 
 GitHub Actions example: [docs/github-actions.md](docs/github-actions.md)
-The repository also exposes a report-only composite action through `action.yml`;
-artifact and SARIF uploads remain explicit workflow choices.
+The recommended CI path is to checkout or vendor Lucid and run the local Python
+script directly. Artifact and SARIF uploads remain explicit workflow choices.
 
 ## Package
 
@@ -136,7 +136,7 @@ For direct terminal usage, see Quick Start.
 - `SKILL.md` is a short router.
 - `references/` contains judgment rules.
 - `lucid.py` is a thin CLI wrapper.
-- `action.yml` is a report-only GitHub composite action wrapper.
+- `action.yml` is experimental and not the primary CI surface.
 - `skills/lucid/scripts/lucid.py` performs deterministic checks.
 - `evals/fixtures` prevent regressions.
 - `.lucid/plan.md` is generated before any edit.
@@ -162,8 +162,7 @@ roadmap.
 - v0.2: skill packaging, CLI wrapper, basic scoring, terminal summaries,
   diff-only suggestions, SARIF
 - v0.3: policy packs and source graph
-- v1.0: stable schemas, GitHub Action productization, marketplace packaging,
-  optional adapters
+- v1.0: stable schemas, packaged skill distribution, optional CI recipes
 
 ## Status
 

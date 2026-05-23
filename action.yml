@@ -1,5 +1,5 @@
 name: Lucid
-description: Report-only context hygiene audit, JSON plan, and GitHub step summary.
+description: Experimental report-only context hygiene audit, JSON plan, and GitHub step summary.
 branding:
   icon: search
   color: gray-dark
