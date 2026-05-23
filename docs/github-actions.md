@@ -17,6 +17,11 @@ suppresses report body stdout in the workflow log, and does not upload SARIF or
 artifacts by itself.
 The `root` input is constrained so the root must stay inside `GITHUB_WORKSPACE`.
 
+The action repository must be accessible to the workflow that references it. If
+this repository is private, configure GitHub Actions access for the intended
+consumer repositories, or use the direct command workflow with a vendored Lucid
+checkout instead.
+
 ```yaml
 name: lucid
 
