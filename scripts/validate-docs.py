@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -11,6 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 GITHUB_ACTIONS_DOC = ROOT / "docs" / "github-actions.md"
 README = ROOT / "README.md"
 ACTION = ROOT / "action.yml"
+
+EXPERIMENTAL_ACTION_FORBIDDEN_PATTERNS = [
+    (re.compile(r"\bgit\s+apply\b"), "git apply"),
+    (re.compile(r"\bcurl\b"), "curl"),
+    (re.compile(r"\bpip\s+install\b"), "pip install"),
+    (re.compile(r"\bnpm\b"), "npm"),
+    (re.compile(r"\bupload-sarif\b"), "upload-sarif"),
+    (re.compile(r"\bupload-artifact\b"), "upload-artifact"),
+    (re.compile(r"\bgh\b"), "gh"),
+    (re.compile(r"\|\s*tee\b"), "tee pipe"),
+]
 
 
 def fail(message: str) -> None:
@@ -96,7 +108,7 @@ def validate_github_actions_doc() -> None:
 
 def validate_experimental_action_safety() -> None:
     if not ACTION.exists():
-        return
+        fail("action.yml is missing")
 
     text = ACTION.read_text(encoding="utf-8")
     required = [
@@ -111,25 +123,42 @@ def validate_experimental_action_safety() -> None:
     for needle in required:
         require_text(text, needle, "action.yml")
 
+    forbid_experimental_action_shell(text, "action.yml")
+
+
+def forbid_experimental_action_shell(text: str, label: str) -> None:
     forbidden = [
-        "git apply",
-        "curl ",
-        "pip install",
-        "npm ",
-        "upload-sarif",
-        "upload-artifact",
         ".github/workflows/",
         ".github/actions/",
-        "| tee",
     ]
     for needle in forbidden:
-        forbid_text(text, needle, "action.yml")
-    forbid_command(text, "gh", "action.yml")
+        forbid_text(text, needle, label)
+    pattern_name = forbidden_action_shell_pattern(text)
+    if pattern_name is not None:
+        fail(f"{label} contains forbidden action shell pattern: {pattern_name}")
+
+
+def forbidden_action_shell_pattern(text: str) -> str | None:
+    for pattern, name in EXPERIMENTAL_ACTION_FORBIDDEN_PATTERNS:
+        if pattern.search(text):
+            return name
+    return None
+
+
+def validate_experimental_action_safety_regressions() -> None:
+    bypass_samples = [
+        "run: echo ok |tee .lucid/audit.txt",
+        "run: echo ok && gh pr view",
+    ]
+    for sample in bypass_samples:
+        if forbidden_action_shell_pattern(sample) is None:
+            fail(f"action.yml safety regression was not caught: {sample}")
 
 
 def main() -> int:
     validate_github_actions_doc()
     validate_experimental_action_safety()
+    validate_experimental_action_safety_regressions()
     print("validate-docs: ok")
     return 0
 
