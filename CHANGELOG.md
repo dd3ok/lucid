@@ -11,6 +11,9 @@
 
 - Shortened the Lucid skill frontmatter description to keep skill discovery
   lightweight while preserving context hygiene matching terms.
+- De-scoped the composite GitHub Action wrapper as experimental and clarified
+  that official CI usage is direct Python script execution after checking out
+  or vendoring Lucid.
 
 ## v0.2.1 - 2026-05-23
 

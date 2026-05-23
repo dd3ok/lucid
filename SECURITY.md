@@ -22,11 +22,11 @@ Lucid must not:
 - write scanner/planner reports, SARIF reports, or patch suggestions outside `.lucid/`
 - write skill package archives outside `dist/`
 
-The GitHub composite action wrapper uses GitHub runner-provided files such as
-`GITHUB_OUTPUT` and `GITHUB_STEP_SUMMARY` only to publish action outputs and a
-step summary. The Lucid Python runtime still does not read repository
-environment values, secrets, or credential stores.
-The wrapper also rejects `root` inputs that resolve outside `GITHUB_WORKSPACE`.
+The experimental GitHub composite action wrapper is not the primary CI path.
+When used, it only wraps local Lucid commands and may write GitHub
+runner-provided `GITHUB_OUTPUT` or `GITHUB_STEP_SUMMARY` files. The Lucid Python
+runtime still does not read repository environment values, secrets, or
+credential stores.
 
 Generated JSON and Markdown reports may include short snippets. Unsafe snippets
 are redacted before JSON or Markdown rendering when Lucid detects secret-like

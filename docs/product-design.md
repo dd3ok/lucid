@@ -56,7 +56,7 @@ The canonical skill source is `skills/lucid/`.
 - `SKILL.md` is the runtime router.
 - `references/` holds judgment rules.
 - `lucid.py` is a thin repo-level CLI wrapper.
-- `action.yml` is a report-only GitHub composite action wrapper.
+- `action.yml` is experimental and not the primary CI surface.
 - `skills/lucid/scripts/lucid.py` performs deterministic checks.
 - `evals/` and `fixtures/` define regression behavior.
 - `.lucid/` contains generated reports and plans.
@@ -131,4 +131,7 @@ This section is the detailed roadmap source of truth for public docs.
 - v0.2: skill packaging, CLI wrapper, basic scoring, terminal summaries,
   diff-only suggestions, SARIF.
 - v0.3: policy packs, source graph, redaction preview, provenance, migration helpers.
-- v1.0: stable schemas, GitHub Action productization, marketplace packaging, optional adapters.
+- v1.0: stable schemas, packaged skill distribution, optional CI recipes.
+
+GitHub Action productization is out of current scope and should only be
+revisited if direct-script CI usage proves insufficient.
