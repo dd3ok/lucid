@@ -14,6 +14,8 @@
 - De-scoped the composite GitHub Action wrapper as experimental and clarified
   that official CI usage is direct Python script execution after checking out
   or vendoring Lucid.
+- Skipped `.lucid-tool/` during scans and restored minimal safety validation
+  for the experimental action metadata.
 
 ## v0.2.1 - 2026-05-23
 

@@ -489,10 +489,16 @@ def validate_cli_wrapper() -> None:
         fail("lucid.py wrapper did not preserve delegated scan files")
 
 
+def validate_ci_tool_checkout_is_skipped(lucid: ModuleType) -> None:
+    if not lucid.is_skipped(ROOT / ".lucid-tool" / "AGENTS.md", ROOT):
+        fail(".lucid-tool checkout directory was not skipped")
+
+
 def main() -> int:
     if not CASES.exists():
         fail("evals/behavior-cases is missing")
     lucid = load_lucid()
+    validate_ci_tool_checkout_is_skipped(lucid)
 
     case_paths = sorted(CASES.glob("*.json"))
     if not case_paths:

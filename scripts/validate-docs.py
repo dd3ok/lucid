@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GITHUB_ACTIONS_DOC = ROOT / "docs" / "github-actions.md"
 README = ROOT / "README.md"
+ACTION = ROOT / "action.yml"
 
 
 def fail(message: str) -> None:
@@ -93,8 +94,42 @@ def validate_github_actions_doc() -> None:
     require_text(readme, "docs/github-actions.md", "README.md")
 
 
+def validate_experimental_action_safety() -> None:
+    if not ACTION.exists():
+        return
+
+    text = ACTION.read_text(encoding="utf-8")
+    required = [
+        "Experimental report-only",
+        "using: composite",
+        "GITHUB_WORKSPACE",
+        "root must stay inside GITHUB_WORKSPACE",
+        "$artifact_dir/audit.sarif",
+        "$artifact_dir/plan.json",
+        "$artifact_dir/audit.txt",
+    ]
+    for needle in required:
+        require_text(text, needle, "action.yml")
+
+    forbidden = [
+        "git apply",
+        "curl ",
+        "pip install",
+        "npm ",
+        "upload-sarif",
+        "upload-artifact",
+        ".github/workflows/",
+        ".github/actions/",
+        "| tee",
+    ]
+    for needle in forbidden:
+        forbid_text(text, needle, "action.yml")
+    forbid_command(text, "gh", "action.yml")
+
+
 def main() -> int:
     validate_github_actions_doc()
+    validate_experimental_action_safety()
     print("validate-docs: ok")
     return 0
 

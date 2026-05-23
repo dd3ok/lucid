@@ -9,6 +9,8 @@ The examples below check Lucid out under `.lucid-tool/`. If you vendor Lucid in
 the target repository, replace `python3 .lucid-tool/lucid.py` with that path.
 If the Lucid repository is private, use normal checkout credentials or vendor
 the tool in the target repository.
+Lucid skips `.lucid-tool/` during scans so the checked-out tool does not become
+part of the target repository audit.
 
 ## Minimal Report-Only Workflow
 

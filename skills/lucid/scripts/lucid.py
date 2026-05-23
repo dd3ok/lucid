@@ -125,6 +125,7 @@ PATCH_ELIGIBLE_RULES = {
 SKIP_DIRS = {
     ".git",
     ".lucid",
+    ".lucid-tool",
     ".local",
     ".venv",
     "__pycache__",
