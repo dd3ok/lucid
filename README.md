@@ -167,7 +167,7 @@ roadmap.
 
 ## Status
 
-Lucid v0.2.0 is a public alpha. The current package is a read-only context
+Lucid v0.2.1 is a public alpha. The current package is a read-only context
 hygiene scanner, planner, reporter, and review-only patch suggestion tool for
 local validation before applying cleanup changes.
 
