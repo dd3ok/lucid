@@ -7,6 +7,11 @@
 - GitHub Actions guide now documents action repository access requirements for
   private Lucid checkouts.
 
+### Changed
+
+- Shortened the Lucid skill frontmatter description to keep skill discovery
+  lightweight while preserving context hygiene matching terms.
+
 ## v0.2.1 - 2026-05-23
 
 ### Added
