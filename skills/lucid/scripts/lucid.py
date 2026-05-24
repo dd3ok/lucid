@@ -297,7 +297,8 @@ def validate_write_policy(value: Any, label: str) -> None:
 def validate_config_overlay(overlay: Any, label: str) -> dict[str, Any]:
     config = require_config_object(overlay, label, "config")
     validate_known_config_keys(config, label, "", CONFIG_TOP_LEVEL_KEYS)
-    if config.get("version") != 1:
+    version = config.get("version")
+    if type(version) is not int or version != 1:
         raise SystemExit(f"invalid {label}: version must be 1")
 
     if "surfaces" in config:
