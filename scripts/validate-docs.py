@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 GITHUB_ACTIONS_DOC = ROOT / "docs" / "github-actions.md"
+POLICY_PACKS_DOC = ROOT / "docs" / "policy-packs.md"
 README = ROOT / "README.md"
 ACTION = ROOT / "action.yml"
 
@@ -32,6 +33,12 @@ def fail(message: str) -> None:
 
 def require_text(text: str, needle: str, label: str) -> None:
     if needle not in text:
+        fail(f"{label} missing required text: {needle}")
+
+
+def require_normalized_text(text: str, needle: str, label: str) -> None:
+    normalized = " ".join(text.split())
+    if needle not in normalized:
         fail(f"{label} missing required text: {needle}")
 
 
@@ -106,6 +113,34 @@ def validate_github_actions_doc() -> None:
     require_text(readme, "docs/github-actions.md", "README.md")
 
 
+def validate_policy_packs_doc() -> None:
+    if not POLICY_PACKS_DOC.exists():
+        fail("docs/policy-packs.md is missing")
+
+    text = POLICY_PACKS_DOC.read_text(encoding="utf-8")
+    required = [
+        "deterministic config overlays, not plugins",
+        "cannot execute code",
+        "call networks",
+        "call LLMs",
+        "read environment values",
+        "read credential stores",
+        "add new rule engines",
+        "This schema is a design contract for v0.3",
+        "It is not loaded by Lucid until policy pack loading is implemented",
+        "Schema design.",
+        "Config schema validation.",
+        "Policy pack loading.",
+    ]
+    for needle in required:
+        require_normalized_text(text, needle, "docs/policy-packs.md")
+
+    if not README.exists():
+        fail("README.md is missing")
+    readme = README.read_text(encoding="utf-8")
+    require_text(readme, "docs/policy-packs.md", "README.md")
+
+
 def validate_experimental_action_safety() -> None:
     if not ACTION.exists():
         fail("action.yml is missing")
@@ -157,6 +192,7 @@ def validate_experimental_action_safety_regressions() -> None:
 
 def main() -> int:
     validate_github_actions_doc()
+    validate_policy_packs_doc()
     validate_experimental_action_safety()
     validate_experimental_action_safety_regressions()
     print("validate-docs: ok")
