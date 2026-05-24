@@ -1,6 +1,6 @@
 {
+  "version": 1,
   "rules": {
     "source_of_truth_drift": false
   }
 }
-

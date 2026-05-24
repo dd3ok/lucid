@@ -1,6 +1,6 @@
 {
   "version": 1,
   "thresholds": {
-    "duplicate_similarity_min": 0.95
+    "always_loaded_max_lines": "120"
   }
 }

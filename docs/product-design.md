@@ -92,6 +92,7 @@ Example:
 
 ```json
 {
+  "version": 1,
   "rules": {
     "stale_context": false,
     "negative_residue": true,
