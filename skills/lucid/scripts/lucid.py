@@ -358,7 +358,8 @@ def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
         raise SystemExit(f"invalid lucid.ignore.json: {exc}") from exc
     if not isinstance(data, dict):
         raise SystemExit("lucid.ignore.json must be a JSON object")
-    if data.get("version") != 1:
+    version = data.get("version")
+    if type(version) is not int or version != 1:
         raise SystemExit("lucid.ignore.json version must be 1")
     suppressions = data.get("suppressions", [])
     if not isinstance(suppressions, list):
