@@ -263,6 +263,22 @@ def validate_ignore_suppressions(lucid: ModuleType) -> None:
     else:
         fail("invalid lucid.ignore.json was accepted")
 
+    invalid_version_fixtures = [
+        ROOT / "fixtures" / "invalid-ignore-version-bool",
+        ROOT / "fixtures" / "invalid-ignore-version-float",
+    ]
+    for invalid_version_fixture in invalid_version_fixtures:
+        try:
+            lucid.audit(invalid_version_fixture, output_format="json")
+        except SystemExit as exc:
+            if "lucid.ignore.json version must be 1" not in str(exc):
+                fail(
+                    f"{invalid_version_fixture.name} error did not identify "
+                    "invalid version"
+                )
+        else:
+            fail(f"{invalid_version_fixture.name} lucid.ignore.json was accepted")
+
     duplicate_fixture = ROOT / "fixtures" / "duplicate-ignore"
     try:
         lucid.audit(duplicate_fixture, output_format="json")
