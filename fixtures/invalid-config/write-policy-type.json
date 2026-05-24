@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "write_policy": {
+    "auto_apply": "false"
+  }
+}

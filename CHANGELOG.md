@@ -6,6 +6,8 @@
 
 - Initial v0.3 policy pack schema design, documenting deterministic config
   overlays for runtime-specific context surfaces and path conventions.
+- Fail-closed schema validation for `lucid.config.json` and explicit
+  `--config` files.
 
 ## v0.2.2 - 2026-05-23
 

@@ -12,6 +12,11 @@ Commands that load repository config accept `--config` for an explicit config
 file inside the target root. When omitted, Lucid uses `lucid.config.json` from
 the target root if present.
 
+Config files must be JSON objects with `version: 1`. Lucid fails closed on
+unknown top-level keys, unknown rule keys, and type mismatches. This keeps v0.3
+policy work from silently accepting misspelled overlays before policy pack
+loading exists.
+
 ## Scan Output
 
 Produced by:

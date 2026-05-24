@@ -112,6 +112,7 @@ PLAN_COMPATIBILITY_NOTE = {
     ),
 }
 KNOWN_RULE_IDS = {rule.replace("_", "-") for rule in DEFAULT_CONFIG["rules"]}
+CONFIG_TOP_LEVEL_KEYS = set(DEFAULT_CONFIG)
 SEVERITY_SCORE_IMPACT = {
     "high": 10,
     "medium": 5,
@@ -228,6 +229,104 @@ def resolve_config_path(root: Path, config_path: str | None) -> Path:
     return resolved
 
 
+def require_config_object(value: Any, label: str, path: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise SystemExit(f"invalid {label}: {path} must be an object")
+    return value
+
+
+def require_config_string_list(value: Any, label: str, path: str) -> list[str]:
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise SystemExit(f"invalid {label}: {path} must be a list of strings")
+    return value
+
+
+def validate_known_config_keys(
+    data: dict[str, Any], label: str, path: str, known_keys: set[str]
+) -> None:
+    for key in sorted(set(data) - known_keys):
+        if path:
+            raise SystemExit(f"invalid {label}: unknown {path} key: {key}")
+        raise SystemExit(f"invalid {label}: unknown top-level config key: {key}")
+
+
+def validate_string_list_mapping(
+    value: Any, label: str, path: str, known_keys: set[str]
+) -> None:
+    mapping = require_config_object(value, label, path)
+    validate_known_config_keys(mapping, label, path, known_keys)
+    for key, items in mapping.items():
+        require_config_string_list(items, label, f"{path}.{key}")
+
+
+def validate_thresholds(value: Any, label: str) -> None:
+    thresholds = require_config_object(value, label, "thresholds")
+    validate_known_config_keys(
+        thresholds, label, "thresholds", set(DEFAULT_CONFIG["thresholds"])
+    )
+    for key, threshold in thresholds.items():
+        if not isinstance(threshold, (int, float)) or isinstance(threshold, bool):
+            raise SystemExit(f"invalid {label}: thresholds.{key} must be a number")
+
+
+def validate_rules(value: Any, label: str) -> None:
+    rules = require_config_object(value, label, "rules")
+    validate_known_config_keys(rules, label, "rules", set(DEFAULT_CONFIG["rules"]))
+    for key, enabled in rules.items():
+        if not isinstance(enabled, bool):
+            raise SystemExit(f"invalid {label}: rules.{key} must be a boolean")
+
+
+def validate_write_policy(value: Any, label: str) -> None:
+    write_policy = require_config_object(value, label, "write_policy")
+    validate_known_config_keys(
+        write_policy, label, "write_policy", set(DEFAULT_CONFIG["write_policy"])
+    )
+    for key, setting in write_policy.items():
+        if key == "allowed_output_dir":
+            if not isinstance(setting, str) or not setting:
+                raise SystemExit(
+                    f"invalid {label}: write_policy.allowed_output_dir "
+                    "must be a non-empty string"
+                )
+            continue
+        if not isinstance(setting, bool):
+            raise SystemExit(f"invalid {label}: write_policy.{key} must be a boolean")
+
+
+def validate_config_overlay(overlay: Any, label: str) -> dict[str, Any]:
+    config = require_config_object(overlay, label, "config")
+    validate_known_config_keys(config, label, "", CONFIG_TOP_LEVEL_KEYS)
+    if config.get("version") != 1:
+        raise SystemExit(f"invalid {label}: version must be 1")
+
+    if "surfaces" in config:
+        validate_string_list_mapping(
+            config["surfaces"], label, "surfaces", set(DEFAULT_CONFIG["surfaces"])
+        )
+    if "thresholds" in config:
+        validate_thresholds(config["thresholds"], label)
+    if "rules" in config:
+        validate_rules(config["rules"], label)
+    if "obsolete_identifiers" in config:
+        validate_string_list_mapping(
+            config["obsolete_identifiers"],
+            label,
+            "obsolete_identifiers",
+            set(DEFAULT_CONFIG["obsolete_identifiers"]),
+        )
+    if "compatibility_protected_patterns" in config:
+        require_config_string_list(
+            config["compatibility_protected_patterns"],
+            label,
+            "compatibility_protected_patterns",
+        )
+    if "write_policy" in config:
+        validate_write_policy(config["write_policy"], label)
+
+    return config
+
+
 def load_config(root: Path, config_path: str | None = None) -> dict[str, Any]:
     config_file = resolve_config_path(root, config_path)
     if config_path is not None and not config_file.exists():
@@ -241,6 +340,8 @@ def load_config(root: Path, config_path: str | None = None) -> dict[str, Any]:
     except json.JSONDecodeError as exc:
         label = config_path or "lucid.config.json"
         raise SystemExit(f"invalid {label}: {exc}") from exc
+    label = config_path or "lucid.config.json"
+    validate_config_overlay(overlay, label)
     return deep_merge(DEFAULT_CONFIG, overlay)
 
 

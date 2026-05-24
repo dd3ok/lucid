@@ -190,6 +190,30 @@ def validate_explicit_config_path(lucid: ModuleType) -> None:
     fail("empty explicit config path fell back to default config")
 
 
+def validate_config_schema_validation(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "invalid-config"
+    cases = [
+        ("missing-version.json", "version must be 1"),
+        ("unknown-top-level.json", "unknown top-level config key: policy_pack"),
+        ("unknown-rule.json", "unknown rules key: unsafe-context"),
+        ("rule-type.json", "rules.unsafe_context must be a boolean"),
+        ("surface-type.json", "surfaces.always_loaded must be a list of strings"),
+        ("threshold-type.json", "thresholds.always_loaded_max_lines must be a number"),
+        ("write-policy-type.json", "write_policy.auto_apply must be a boolean"),
+    ]
+    for config_name, expected_message in cases:
+        try:
+            lucid.audit(fixture, output_format="json", config_path=config_name)
+        except SystemExit as exc:
+            if expected_message not in str(exc):
+                fail(
+                    f"{config_name} error did not include expected message: "
+                    f"{expected_message}"
+                )
+        else:
+            fail(f"{config_name} was accepted")
+
+
 def validate_ignore_suppressions(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "ignore-suppressions"
     audit = lucid.audit(fixture, output_format="json")
@@ -571,6 +595,7 @@ def main() -> int:
     validate_trigger_queries()
     validate_plan_audit_input_scope(lucid)
     validate_explicit_config_path(lucid)
+    validate_config_schema_validation(lucid)
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
