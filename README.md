@@ -147,6 +147,8 @@ Product contract: [docs/product-design.md](docs/product-design.md)
 
 Output schema: [docs/output-schema.md](docs/output-schema.md)
 
+Policy packs: [docs/policy-packs.md](docs/policy-packs.md)
+
 GitHub Actions usage: [docs/github-actions.md](docs/github-actions.md)
 
 Security policy: [SECURITY.md](SECURITY.md)
