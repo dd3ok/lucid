@@ -101,6 +101,58 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "allow_env_read": False,
     },
 }
+
+
+def surface_overlay(
+    *,
+    always_loaded: list[str] | None = None,
+    skill: list[str] | None = None,
+    docs: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "version": 1,
+        "surfaces": {
+            "always_loaded": DEFAULT_CONFIG["surfaces"]["always_loaded"]
+            + (always_loaded or []),
+            "skill": DEFAULT_CONFIG["surfaces"]["skill"] + (skill or []),
+            "docs": DEFAULT_CONFIG["surfaces"]["docs"] + (docs or []),
+        },
+    }
+
+
+BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
+    "generic": {"version": 1},
+    "codex": surface_overlay(
+        skill=[
+            ".agents/skills/*/SKILL.md",
+            ".agents/skills/*/references/**/*.md",
+            "agents/openai.yaml",
+        ],
+    ),
+    "claude": surface_overlay(
+        skill=[
+            ".claude/skills/*/SKILL.md",
+            ".claude/skills/*/references/**/*.md",
+            ".claude/skills/*/examples/**/*.md",
+        ],
+    ),
+    "gemini": surface_overlay(
+        skill=[
+            ".gemini/skills/*/SKILL.md",
+            ".gemini/skills/*/references/**/*.md",
+            ".agents/skills/*/SKILL.md",
+            ".agents/skills/*/references/**/*.md",
+        ],
+    ),
+    "openclaw": surface_overlay(
+        skill=[
+            ".openclaw/skills/*/SKILL.md",
+            ".openclaw/skills/*/references/**/*.md",
+            "skills/*/SKILL.md",
+            "skills/*/references/**/*.md",
+        ],
+    ),
+}
 PLAN_SAFETY_NOTE = "Non-destructive. Requires user approval before editing."
 PLAN_COMPATIBILITY_NOTE = {
     "why_it_looks_stale": "It uses old-looking or legacy compatibility wording.",
@@ -112,7 +164,7 @@ PLAN_COMPATIBILITY_NOTE = {
     ),
 }
 KNOWN_RULE_IDS = {rule.replace("_", "-") for rule in DEFAULT_CONFIG["rules"]}
-CONFIG_TOP_LEVEL_KEYS = set(DEFAULT_CONFIG)
+CONFIG_TOP_LEVEL_KEYS = set(DEFAULT_CONFIG) | {"policy_pack"}
 SEVERITY_SCORE_IMPACT = {
     "high": 10,
     "medium": 5,
@@ -300,6 +352,12 @@ def validate_config_overlay(overlay: Any, label: str) -> dict[str, Any]:
     version = config.get("version")
     if type(version) is not int or version != 1:
         raise SystemExit(f"invalid {label}: version must be 1")
+    if "policy_pack" in config:
+        policy_pack = config["policy_pack"]
+        if not isinstance(policy_pack, str) or not policy_pack.strip():
+            raise SystemExit(f"invalid {label}: policy_pack must be a non-empty string")
+        if policy_pack not in BUILT_IN_POLICY_PACKS:
+            raise SystemExit(f"invalid {label}: unknown policy_pack: {policy_pack}")
 
     if "surfaces" in config:
         validate_string_list_mapping(
@@ -328,6 +386,14 @@ def validate_config_overlay(overlay: Any, label: str) -> dict[str, Any]:
     return config
 
 
+def load_policy_pack_overlay(name: str, label: str) -> dict[str, Any]:
+    overlay = BUILT_IN_POLICY_PACKS.get(name)
+    if overlay is None:
+        raise SystemExit(f"invalid {label}: unknown policy_pack: {name}")
+    validate_config_overlay(overlay, f"policy pack {name}")
+    return overlay
+
+
 def load_config(root: Path, config_path: str | None = None) -> dict[str, Any]:
     config_file = resolve_config_path(root, config_path)
     if config_path is not None and not config_file.exists():
@@ -342,8 +408,12 @@ def load_config(root: Path, config_path: str | None = None) -> dict[str, Any]:
         label = config_path or "lucid.config.json"
         raise SystemExit(f"invalid {label}: {exc}") from exc
     label = config_path or "lucid.config.json"
-    validate_config_overlay(overlay, label)
-    return deep_merge(DEFAULT_CONFIG, overlay)
+    validated_overlay = validate_config_overlay(overlay, label)
+    policy_pack_name = validated_overlay.get("policy_pack", "generic")
+    policy_overlay = load_policy_pack_overlay(policy_pack_name, label)
+    user_overlay = json.loads(json.dumps(validated_overlay))
+    user_overlay.pop("policy_pack", None)
+    return deep_merge(deep_merge(DEFAULT_CONFIG, policy_overlay), user_overlay)
 
 
 def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:

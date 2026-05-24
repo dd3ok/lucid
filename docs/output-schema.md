@@ -13,9 +13,14 @@ file inside the target root. When omitted, Lucid uses `lucid.config.json` from
 the target root if present.
 
 Config files must be JSON objects with `version: 1`. Lucid fails closed on
-unknown top-level keys, unknown rule keys, and type mismatches. This keeps v0.3
-policy work from silently accepting misspelled overlays before policy pack
-loading exists.
+unknown top-level keys, unknown rule keys, and type mismatches. This keeps
+v0.3 policy work from silently accepting misspelled overlays as policy pack
+loading evolves.
+
+Config files may set `policy_pack` to one of Lucid's built-in deterministic
+overlays: `generic`, `codex`, `claude`, `gemini`, or `openclaw`. Unknown pack
+names fail closed. Policy packs tune existing config only; they do not add
+executable hooks or new rule engines.
 
 ## Scan Output
 
