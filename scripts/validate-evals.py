@@ -194,6 +194,8 @@ def validate_config_schema_validation(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "invalid-config"
     cases = [
         ("missing-version.json", "version must be 1"),
+        ("version-bool.json", "version must be 1"),
+        ("version-float.json", "version must be 1"),
         ("unknown-top-level.json", "unknown top-level config key: policy_pack"),
         ("unknown-rule.json", "unknown rules key: unsafe-context"),
         ("rule-type.json", "rules.unsafe_context must be a boolean"),
