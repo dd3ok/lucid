@@ -6,8 +6,9 @@ They cannot execute code, call networks, call LLMs, read environment values,
 read credential stores, or add new rule engines. They only tune existing Lucid
 checks for runtime-specific context surfaces and path conventions.
 
-This schema is a design contract for v0.3. It is not loaded by Lucid until
-policy pack loading is implemented in a later PR.
+This schema is a design contract for v0.3. Built-in policy packs are loaded by
+setting `policy_pack` in `lucid.config.json` or an explicit `--config` file.
+External policy pack files and custom pack loading are not implemented.
 
 ## Goals
 
@@ -76,6 +77,20 @@ policy pack loading is implemented in a later PR.
 }
 ```
 
+## Config Selection
+
+Use `policy_pack` in Lucid config to select a built-in policy overlay:
+
+```json
+{
+  "version": 1,
+  "policy_pack": "claude"
+}
+```
+
+Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`, and
+`openclaw`. Unknown pack names fail closed.
+
 ## Field Notes
 
 | Field | Purpose |
@@ -92,19 +107,19 @@ policy pack loading is implemented in a later PR.
 
 ## Runtime Pack Examples
 
-`generic` should cover broad agent-facing docs, common memory files, skill
+`generic` covers broad agent-facing docs, common memory files, skill
 references, prompts, templates, examples, evals, and fixtures.
 
-`codex` may tune AGENTS.md-heavy workflows, `.agents/skills` paths, and
+`codex` tunes AGENTS.md-heavy workflows, `.agents/skills` paths, and
 `agents/openai.yaml` metadata awareness.
 
-`claude` may tune `CLAUDE.md`, `.claude/skills` paths, skill references, and
+`claude` tunes `CLAUDE.md`, `.claude/skills` paths, skill references, and
 example-heavy skill layouts.
 
-`gemini` may tune `GEMINI.md`, `.gemini/skills` paths, and `.agents/skills`
+`gemini` tunes `GEMINI.md`, `.gemini/skills` paths, and `.agents/skills`
 alias awareness.
 
-`openclaw` may tune workspace `skills/`, `~/.openclaw/skills`, and OpenClaw
+`openclaw` tunes workspace `skills/`, `.openclaw/skills`, and OpenClaw
 metadata constraints.
 
 ## Safety Model

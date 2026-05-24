@@ -8,6 +8,7 @@
   overlays for runtime-specific context surfaces and path conventions.
 - Fail-closed schema validation for `lucid.config.json` and explicit
   `--config` files.
+- Built-in policy pack loading through `policy_pack` config overlays.
 
 ## v0.2.2 - 2026-05-23
 

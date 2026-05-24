@@ -196,7 +196,7 @@ def validate_config_schema_validation(lucid: ModuleType) -> None:
         ("missing-version.json", "version must be 1"),
         ("version-bool.json", "version must be 1"),
         ("version-float.json", "version must be 1"),
-        ("unknown-top-level.json", "unknown top-level config key: policy_pack"),
+        ("unknown-top-level.json", "unknown top-level config key: policy_packz"),
         ("unknown-rule.json", "unknown rules key: unsafe-context"),
         ("rule-type.json", "rules.unsafe_context must be a boolean"),
         ("surface-type.json", "surfaces.always_loaded must be a list of strings"),
@@ -214,6 +214,23 @@ def validate_config_schema_validation(lucid: ModuleType) -> None:
                 )
         else:
             fail(f"{config_name} was accepted")
+
+
+def validate_policy_pack_loading(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "policy-pack-claude"
+    scan = lucid.scan(fixture, output_format="json")
+    paths = {item.get("path") for item in scan.get("files", [])}
+    if ".claude/skills/reviewer/SKILL.md" not in paths:
+        fail("claude policy pack did not include .claude skill surface")
+
+    invalid_fixture = ROOT / "fixtures" / "invalid-policy-pack"
+    try:
+        lucid.scan(invalid_fixture, output_format="json")
+    except SystemExit as exc:
+        if "unknown policy_pack: unknown-runtime" not in str(exc):
+            fail("unknown policy pack error did not identify pack name")
+    else:
+        fail("unknown policy pack was accepted")
 
 
 def validate_ignore_suppressions(lucid: ModuleType) -> None:
@@ -614,6 +631,7 @@ def main() -> int:
     validate_plan_audit_input_scope(lucid)
     validate_explicit_config_path(lucid)
     validate_config_schema_validation(lucid)
+    validate_policy_pack_loading(lucid)
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
