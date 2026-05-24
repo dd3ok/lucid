@@ -128,7 +128,8 @@ def validate_policy_packs_doc() -> None:
         "Policy pack loading.",
     ]
     for needle in required:
-        require_text(normalized_text, needle, "docs/policy-packs.md")
+        normalized_needle = " ".join(needle.split())
+        require_text(normalized_text, normalized_needle, "docs/policy-packs.md")
 
     if not README.exists():
         fail("README.md is missing")
