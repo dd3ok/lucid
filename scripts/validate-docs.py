@@ -36,12 +36,6 @@ def require_text(text: str, needle: str, label: str) -> None:
         fail(f"{label} missing required text: {needle}")
 
 
-def require_normalized_text(text: str, needle: str, label: str) -> None:
-    normalized = " ".join(text.split())
-    if needle not in normalized:
-        fail(f"{label} missing required text: {needle}")
-
-
 def forbid_text(text: str, needle: str, label: str) -> None:
     if needle in text:
         fail(f"{label} contains forbidden text: {needle}")
@@ -118,6 +112,7 @@ def validate_policy_packs_doc() -> None:
         fail("docs/policy-packs.md is missing")
 
     text = POLICY_PACKS_DOC.read_text(encoding="utf-8")
+    normalized_text = " ".join(text.split())
     required = [
         "deterministic config overlays, not plugins",
         "cannot execute code",
@@ -133,7 +128,7 @@ def validate_policy_packs_doc() -> None:
         "Policy pack loading.",
     ]
     for needle in required:
-        require_normalized_text(text, needle, "docs/policy-packs.md")
+        require_text(normalized_text, needle, "docs/policy-packs.md")
 
     if not README.exists():
         fail("README.md is missing")
