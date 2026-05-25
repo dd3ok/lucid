@@ -9,6 +9,8 @@
 - Fail-closed schema validation for `lucid.config.json` and explicit
   `--config` files.
 - Built-in policy pack loading through `policy_pack` config overlays.
+- Audit JSON `source_graph` output for deterministic repo-local references
+  found in scanned context surfaces.
 
 ## v0.2.2 - 2026-05-23
 

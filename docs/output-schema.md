@@ -65,6 +65,7 @@ Top-level fields:
 | `root` | string | Absolute target repository root. |
 | `generated_at` | string | UTC ISO-8601 timestamp. |
 | `files_scanned` | number | Count of discovered context surface files. |
+| `source_graph` | array | Deterministic repo-local reference graph extracted from scanned context surfaces. |
 | `findings` | array | Active finding records after suppressions are applied. |
 | `suppressed_findings` | array | Findings suppressed by `lucid.ignore.json`, with suppression metadata. |
 | `summary` | object | Aggregated finding counts. |
@@ -101,6 +102,32 @@ The line mirrors audit `summary` fields and contains summary metrics only:
 counts plus debt score totals. It is informational, does not change exit codes,
 and is emitted only for terminal audit output, not JSON, SARIF, plan, or patch
 artifacts.
+
+## Source Graph
+
+Audit JSON includes `source_graph`, a best-effort deterministic graph of
+repo-local references found in scanned context surfaces. It records Markdown
+links, inline code paths, and source-of-truth style bare filename references
+that resolve to existing files inside the target root.
+
+Source graph entries are informational evidence only. They do not create
+findings, change scores, run semantic analysis, call networks, or infer
+canonical truth.
+
+Top-level node fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `path` | string | Repository-relative source file path. |
+| `references` | array | Repo-local references found in that source file. |
+
+Reference fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `target` | string | Repository-relative referenced file path after safe resolution. |
+| `line` | number | 1-based source line where the reference appeared. |
+| `kind` | string | `markdown-link`, `inline-code`, or `reference-intent`. |
 
 ## Finding
 
