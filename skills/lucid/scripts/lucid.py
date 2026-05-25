@@ -635,10 +635,11 @@ def make_finding(
     requires_manual_review: bool = False,
     replacement_hint: str | None = None,
     source_of_truth: str | None = None,
+    provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if suggested_action not in ALLOWED_ACTIONS:
         raise ValueError(f"unsupported action: {suggested_action}")
-    return {
+    finding = {
         "id": "",
         "rule": rule,
         "severity": severity,
@@ -653,6 +654,9 @@ def make_finding(
         "confidence": confidence,
         "requires_manual_review": requires_manual_review,
     }
+    if provenance is not None:
+        finding["provenance"] = provenance
+    return finding
 
 
 def rule_always_loaded_bloat(
@@ -929,6 +933,16 @@ def rule_stale_reference(root: Path, path: str, lines: list[str]) -> list[dict[s
                         suggested_action="manual-review",
                         confidence=0.7,
                         requires_manual_review=True,
+                        provenance={
+                            "deterministic": True,
+                            "signals": [
+                                {
+                                    "kind": "missing-reference",
+                                    "candidate": candidate,
+                                    "line": index,
+                                }
+                            ],
+                        },
                     )
                 )
     return findings

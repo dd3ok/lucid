@@ -11,6 +11,7 @@
 - Built-in policy pack loading through `policy_pack` config overlays.
 - Audit JSON `source_graph` output for deterministic repo-local references
   found in scanned context surfaces.
+- Deterministic `provenance` signals for `stale-reference` findings.
 
 ## v0.2.2 - 2026-05-23
 

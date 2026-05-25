@@ -276,6 +276,42 @@ def validate_source_graph(lucid: ModuleType) -> None:
         fail("source_graph did not resolve relative markdown link")
 
 
+def validate_stale_reference_provenance(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "stale-reference"
+    audit = lucid.audit(fixture, output_format="json")
+    stale_findings = [
+        finding for finding in audit["findings"] if finding.get("rule") == "stale-reference"
+    ]
+    if not stale_findings:
+        fail("stale-reference fixture did not produce stale-reference findings")
+
+    expected_candidates = {"docs/missing.md", "scripts/missing.py"}
+    observed_candidates: set[str] = set()
+    for finding in stale_findings:
+        provenance = finding.get("provenance")
+        if not isinstance(provenance, dict):
+            fail("stale-reference finding did not expose provenance")
+        if provenance.get("deterministic") is not True:
+            fail("stale-reference provenance is not marked deterministic")
+        signals = provenance.get("signals")
+        if not isinstance(signals, list) or len(signals) != 1:
+            fail("stale-reference provenance did not expose one signal")
+        signal = signals[0]
+        if not isinstance(signal, dict):
+            fail("stale-reference provenance signal was not an object")
+        if signal.get("kind") != "missing-reference":
+            fail("stale-reference provenance signal did not identify missing-reference")
+        if signal.get("line") != finding.get("line_start"):
+            fail("stale-reference provenance line did not match finding line")
+        candidate = signal.get("candidate")
+        if not isinstance(candidate, str):
+            fail("stale-reference provenance candidate was not a string")
+        observed_candidates.add(candidate)
+
+    if expected_candidates != observed_candidates:
+        fail("stale-reference provenance did not preserve missing reference candidates")
+
+
 def validate_ignore_suppressions(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "ignore-suppressions"
     audit = lucid.audit(fixture, output_format="json")
@@ -676,6 +712,7 @@ def main() -> int:
     validate_config_schema_validation(lucid)
     validate_policy_pack_loading(lucid)
     validate_source_graph(lucid)
+    validate_stale_reference_provenance(lucid)
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
