@@ -1241,6 +1241,18 @@ def rule_near_duplicate_source_of_truth_drift(
                     f"candidate duplicate: {other['path']}:"
                     f"{other['line_start']}-{other['line_end']}"
                 ),
+                provenance={
+                    "deterministic": True,
+                    "signals": [
+                        {
+                            "kind": "near-duplicate-policy-block",
+                            "matched_path": other["path"],
+                            "matched_line_start": other["line_start"],
+                            "matched_line_end": other["line_end"],
+                            "similarity": round(score, 2),
+                        }
+                    ],
+                },
             )
         )
     return findings
@@ -1306,6 +1318,7 @@ def rule_source_of_truth_drift(
         distinct = {value.lower() for _, _, value in values}
         if len(distinct) < 2:
             continue
+        compared_values_count = len(distinct)
         for path, index, value in values:
             findings.append(
                 make_finding(
@@ -1320,6 +1333,17 @@ def rule_source_of_truth_drift(
                     confidence=0.8,
                     requires_manual_review=True,
                     replacement_hint="Keep one canonical statement and replace duplicates with pointers.",
+                    provenance={
+                        "deterministic": True,
+                        "signals": [
+                            {
+                                "kind": "source-of-truth-declaration-conflict",
+                                "key": key,
+                                "value": value,
+                                "compared_values_count": compared_values_count,
+                            }
+                        ],
+                    },
                 )
             )
     findings.extend(rule_near_duplicate_source_of_truth_drift(file_texts, config))

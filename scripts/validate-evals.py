@@ -312,6 +312,63 @@ def validate_stale_reference_provenance(lucid: ModuleType) -> None:
         fail("stale-reference provenance did not preserve missing reference candidates")
 
 
+def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
+    drift = lucid.audit(ROOT / "fixtures" / "source-of-truth-drift", output_format="json")
+    drift_findings = [
+        finding
+        for finding in drift["findings"]
+        if finding.get("rule") == "source-of-truth-drift"
+    ]
+    if not drift_findings:
+        fail("source-of-truth-drift fixture did not produce findings")
+    for finding in drift_findings:
+        provenance = finding.get("provenance")
+        if not isinstance(provenance, dict):
+            fail("source-of-truth-drift finding did not expose provenance")
+        if provenance.get("deterministic") is not True:
+            fail("source-of-truth-drift provenance is not deterministic")
+        signals = provenance.get("signals")
+        if not isinstance(signals, list) or len(signals) != 1:
+            fail("source-of-truth-drift provenance did not expose one signal")
+        signal = signals[0]
+        if signal.get("kind") != "source-of-truth-declaration-conflict":
+            fail("source-of-truth-drift provenance did not identify declaration conflict")
+        if signal.get("key") != "canonical workflow":
+            fail("source-of-truth-drift provenance did not preserve declaration key")
+        if signal.get("value") not in {"scan-first", "summarize-first"}:
+            fail("source-of-truth-drift provenance did not preserve finding value")
+        if signal.get("compared_values_count") != 2:
+            fail("source-of-truth-drift provenance did not count compared values")
+
+    duplicate = lucid.audit(
+        ROOT / "fixtures" / "source-of-truth-near-duplicate", output_format="json"
+    )
+    duplicate_findings = [
+        finding
+        for finding in duplicate["findings"]
+        if finding.get("rule") == "source-of-truth-drift"
+    ]
+    if not duplicate_findings:
+        fail("source-of-truth-near-duplicate fixture did not produce findings")
+    for finding in duplicate_findings:
+        provenance = finding.get("provenance")
+        if not isinstance(provenance, dict):
+            fail("near-duplicate source-of-truth finding did not expose provenance")
+        signals = provenance.get("signals")
+        if not isinstance(signals, list) or len(signals) != 1:
+            fail("near-duplicate source-of-truth provenance did not expose one signal")
+        signal = signals[0]
+        if signal.get("kind") != "near-duplicate-policy-block":
+            fail("near-duplicate provenance did not identify policy block signal")
+        if signal.get("matched_path") not in {"AGENTS.md", "README.md"}:
+            fail("near-duplicate provenance did not preserve matched path")
+        if signal.get("matched_line_start") != 5 or signal.get("matched_line_end") != 7:
+            fail("near-duplicate provenance did not preserve matched line range")
+        similarity = signal.get("similarity")
+        if not isinstance(similarity, float) or similarity < 0.8:
+            fail("near-duplicate provenance did not preserve similarity")
+
+
 def validate_ignore_suppressions(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "ignore-suppressions"
     audit = lucid.audit(fixture, output_format="json")
@@ -713,6 +770,7 @@ def main() -> int:
     validate_policy_pack_loading(lucid)
     validate_source_graph(lucid)
     validate_stale_reference_provenance(lucid)
+    validate_source_of_truth_provenance(lucid)
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
