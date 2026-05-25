@@ -149,6 +149,7 @@ Every audit finding uses this shape:
 | `confidence` | number | Heuristic confidence between `0` and `1`. |
 | `score_impact` | number | Deterministic contribution to summary `debt_score`. |
 | `requires_manual_review` | boolean | Whether the item needs manual review. |
+| `provenance` | object | Optional deterministic evidence signals for why the finding was reported. |
 | `suppression` | object | Present only in `suppressed_findings`; includes the matched ignore entry. |
 
 Allowed cleanup actions:
@@ -160,6 +161,28 @@ Allowed cleanup actions:
 - `move-to-eval`
 - `keep-with-reason`
 - `manual-review`
+
+## Provenance
+
+Finding `provenance` records deterministic evidence, not model reasoning. It is
+optional and rule-specific. The first provenance field is emitted for
+`stale-reference` findings, where Lucid records the missing candidate path and
+source line that triggered the finding.
+
+Provenance fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `deterministic` | boolean | Always `true` for Lucid-generated provenance. |
+| `signals` | array | Rule-local evidence records. |
+
+`stale-reference` signal fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `kind` | string | Signal kind, currently `missing-reference`. |
+| `candidate` | string | Referenced local path that did not resolve. |
+| `line` | number | 1-based source line where the candidate appeared. |
 
 ## Ignore Suppressions
 
