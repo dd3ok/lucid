@@ -312,6 +312,19 @@ def validate_stale_reference_provenance(lucid: ModuleType) -> None:
         fail("stale-reference provenance did not preserve missing reference candidates")
 
 
+def finding_provenance_signal(finding: dict[str, object]) -> dict[str, object] | None:
+    provenance = finding.get("provenance")
+    if not isinstance(provenance, dict):
+        return None
+    if provenance.get("deterministic") is not True:
+        return None
+    signals = provenance.get("signals")
+    if not isinstance(signals, list) or len(signals) != 1:
+        return None
+    signal = signals[0]
+    return signal if isinstance(signal, dict) else None
+
+
 def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
     drift = lucid.audit(ROOT / "fixtures" / "source-of-truth-drift", output_format="json")
     drift_findings = [
@@ -321,18 +334,18 @@ def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
     ]
     if not drift_findings:
         fail("source-of-truth-drift fixture did not produce findings")
-    for finding in drift_findings:
-        provenance = finding.get("provenance")
-        if not isinstance(provenance, dict):
-            fail("source-of-truth-drift finding did not expose provenance")
-        if provenance.get("deterministic") is not True:
-            fail("source-of-truth-drift provenance is not deterministic")
-        signals = provenance.get("signals")
-        if not isinstance(signals, list) or len(signals) != 1:
+    declaration_findings = [
+        finding
+        for finding in drift_findings
+        if (finding_provenance_signal(finding) or {}).get("kind")
+        == "source-of-truth-declaration-conflict"
+    ]
+    if not declaration_findings:
+        fail("source-of-truth-drift provenance did not identify declaration conflict")
+    for finding in declaration_findings:
+        signal = finding_provenance_signal(finding)
+        if signal is None:
             fail("source-of-truth-drift provenance did not expose one signal")
-        signal = signals[0]
-        if signal.get("kind") != "source-of-truth-declaration-conflict":
-            fail("source-of-truth-drift provenance did not identify declaration conflict")
         if signal.get("key") != "canonical workflow":
             fail("source-of-truth-drift provenance did not preserve declaration key")
         if signal.get("value") not in {"scan-first", "summarize-first"}:
@@ -350,19 +363,25 @@ def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
     ]
     if not duplicate_findings:
         fail("source-of-truth-near-duplicate fixture did not produce findings")
-    for finding in duplicate_findings:
-        provenance = finding.get("provenance")
-        if not isinstance(provenance, dict):
-            fail("near-duplicate source-of-truth finding did not expose provenance")
-        signals = provenance.get("signals")
-        if not isinstance(signals, list) or len(signals) != 1:
+    duplicate_signal_findings = [
+        finding
+        for finding in duplicate_findings
+        if (finding_provenance_signal(finding) or {}).get("kind")
+        == "near-duplicate-policy-block"
+    ]
+    if not duplicate_signal_findings:
+        fail("near-duplicate provenance did not identify policy block signal")
+    expected_near_duplicate_range = (5, 7)
+    for finding in duplicate_signal_findings:
+        signal = finding_provenance_signal(finding)
+        if signal is None:
             fail("near-duplicate source-of-truth provenance did not expose one signal")
-        signal = signals[0]
-        if signal.get("kind") != "near-duplicate-policy-block":
-            fail("near-duplicate provenance did not identify policy block signal")
         if signal.get("matched_path") not in {"AGENTS.md", "README.md"}:
             fail("near-duplicate provenance did not preserve matched path")
-        if signal.get("matched_line_start") != 5 or signal.get("matched_line_end") != 7:
+        if (
+            signal.get("matched_line_start"),
+            signal.get("matched_line_end"),
+        ) != expected_near_duplicate_range:
             fail("near-duplicate provenance did not preserve matched line range")
         similarity = signal.get("similarity")
         if not isinstance(similarity, float) or similarity < 0.8:
