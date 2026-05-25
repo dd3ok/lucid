@@ -411,9 +411,8 @@ def load_config(root: Path, config_path: str | None = None) -> dict[str, Any]:
     validated_overlay = validate_config_overlay(overlay, label)
     policy_pack_name = validated_overlay.get("policy_pack", "generic")
     policy_overlay = load_policy_pack_overlay(policy_pack_name, label)
-    user_overlay = json.loads(json.dumps(validated_overlay))
-    user_overlay.pop("policy_pack", None)
-    return deep_merge(deep_merge(DEFAULT_CONFIG, policy_overlay), user_overlay)
+    validated_overlay.pop("policy_pack", None)
+    return deep_merge(deep_merge(DEFAULT_CONFIG, policy_overlay), validated_overlay)
 
 
 def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
