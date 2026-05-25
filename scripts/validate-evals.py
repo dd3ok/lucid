@@ -392,6 +392,36 @@ def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
             fail("near-duplicate provenance did not preserve similarity")
 
 
+def validate_compatibility_risk_provenance(lucid: ModuleType) -> None:
+    audit = lucid.audit(ROOT / "fixtures" / "compatibility-safety", output_format="json")
+    findings = [
+        finding
+        for finding in audit["findings"]
+        if finding.get("rule") == "compatibility-risk"
+    ]
+    if not findings:
+        fail("compatibility-safety fixture did not produce compatibility-risk findings")
+
+    for finding in findings:
+        signal = require_single_provenance_signal(finding, "compatibility-risk")
+        if signal.get("kind") != "compatibility-protected-pattern":
+            fail("compatibility-risk provenance did not identify protected pattern")
+        if signal.get("line") != finding.get("line_start"):
+            fail("compatibility-risk provenance line did not match finding line")
+        if signal.get("pattern") != "backward-compatible":
+            fail("compatibility-risk provenance did not preserve protected pattern")
+
+    empty_config_audit = lucid.audit(
+        ROOT / "fixtures" / "compatibility-no-protected-patterns",
+        output_format="json",
+    )
+    if any(
+        finding.get("rule") == "compatibility-risk"
+        for finding in empty_config_audit["findings"]
+    ):
+        fail("empty compatibility_protected_patterns produced compatibility-risk finding")
+
+
 def validate_ignore_suppressions(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "ignore-suppressions"
     audit = lucid.audit(fixture, output_format="json")
@@ -794,6 +824,7 @@ def main() -> int:
     validate_source_graph(lucid)
     validate_stale_reference_provenance(lucid)
     validate_source_of_truth_provenance(lucid)
+    validate_compatibility_risk_provenance(lucid)
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
