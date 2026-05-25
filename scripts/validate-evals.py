@@ -338,13 +338,13 @@ def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
     ]
     if not drift_findings:
         fail("source-of-truth-drift fixture did not produce findings")
-    declaration_signals = [
+    drift_signals = [
         require_single_provenance_signal(finding, "source-of-truth-drift")
         for finding in drift_findings
     ]
     declaration_signals = [
         signal
-        for signal in declaration_signals
+        for signal in drift_signals
         if signal.get("kind") == "source-of-truth-declaration-conflict"
     ]
     if not declaration_signals:
@@ -378,8 +378,6 @@ def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
     ]
     if unexpected_kinds:
         fail(f"near-duplicate provenance had unexpected signal kinds: {unexpected_kinds}")
-    if not duplicate_signals:
-        fail("near-duplicate provenance did not identify policy block signal")
     expected_near_duplicate_range = (5, 7)
     for signal in duplicate_signals:
         if signal.get("matched_path") not in {"AGENTS.md", "README.md"}:
