@@ -258,6 +258,14 @@ REFERENCE_INTENT_PATTERN = re.compile(
     r"\b(read|load|open|check|review|consult|follow|see|refer(?:red|s|ring)?\s+to)\b",
     re.I,
 )
+SOURCE_GRAPH_INTENT_PATTERN = re.compile(
+    r"\b(source of truth|canonical|read|load|open|check|review|consult|follow|see|"
+    r"refer(?:red|s|ring)?\s+to)\b",
+    re.I,
+)
+SOURCE_GRAPH_INLINE_PATH_PATTERN = re.compile(
+    r"`([^`]+\.(?:md|txt|json|yaml|yml|py|sh))`"
+)
 
 
 def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
@@ -926,6 +934,88 @@ def rule_stale_reference(root: Path, path: str, lines: list[str]) -> list[dict[s
     return findings
 
 
+def clean_source_graph_candidate(raw: str) -> str:
+    candidate = raw.strip()
+    if not candidate:
+        return ""
+    candidate = candidate.split(None, 1)[0].strip("<>")
+    return candidate.split("#", 1)[0].strip()
+
+
+def resolve_source_graph_target(root: Path, source_path: str, candidate: str) -> str | None:
+    if not should_check_reference(candidate):
+        return None
+    source_file = root / source_path
+    root_resolved = root.resolve()
+    for target in (source_file.parent / candidate, root / candidate):
+        resolved = target.resolve()
+        if not resolved.is_relative_to(root_resolved) or not resolved.is_file():
+            continue
+        target_path = relpath(resolved, root)
+        if target_path != source_path:
+            return target_path
+    return None
+
+
+def source_graph_line_references(
+    root: Path, source_path: str, line: str, line_number: int
+) -> list[dict[str, Any]]:
+    references: list[dict[str, Any]] = []
+    seen: set[tuple[str, int, str]] = set()
+
+    def add(raw_candidate: str, kind: str) -> None:
+        candidate = clean_source_graph_candidate(raw_candidate)
+        if not candidate:
+            return
+        target = resolve_source_graph_target(root, source_path, candidate)
+        if target is None:
+            return
+        key = (target, line_number, kind)
+        if key in seen:
+            return
+        seen.add(key)
+        references.append(
+            {
+                "target": target,
+                "line": line_number,
+                "kind": kind,
+            }
+        )
+
+    for match in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", line):
+        add(match.group(1), "markdown-link")
+
+    for match in SOURCE_GRAPH_INLINE_PATH_PATTERN.finditer(line):
+        add(match.group(1), "inline-code")
+
+    if SOURCE_GRAPH_INTENT_PATTERN.search(line):
+        for match in BARE_REFERENCE_FILENAME_PATTERN.finditer(line):
+            add(match.group(0), "reference-intent")
+
+    return references
+
+
+def build_source_graph(root: Path, file_texts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    graph: list[dict[str, Any]] = []
+    for file_text in file_texts:
+        references: list[dict[str, Any]] = []
+        fence = {"inside": False}
+        for index, line in enumerate(file_text["text"].splitlines(), start=1):
+            if in_code_fence(line, fence):
+                continue
+            references.extend(
+                source_graph_line_references(root, file_text["path"], line, index)
+            )
+        if references:
+            graph.append(
+                {
+                    "path": file_text["path"],
+                    "references": references,
+                }
+            )
+    return graph
+
+
 def rule_archive_autoload(path: str, lines: list[str]) -> list[dict[str, Any]]:
     pattern = re.compile(
         r"\b(always|must|every task|before every task).*\b(read|load|include).*\b(archive|deprecated|old|backup)s?/|"
@@ -1294,6 +1384,7 @@ def audit(
         "root": str(root_path),
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "files_scanned": scan_result["files_scanned"],
+        "source_graph": build_source_graph(root_path, file_texts),
         "findings": active_findings,
         "suppressed_findings": suppressed_findings,
         "summary": summarize_findings(active_findings, suppressed_findings),

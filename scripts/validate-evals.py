@@ -233,6 +233,49 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
         fail("unknown policy pack was accepted")
 
 
+def validate_source_graph(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "source-graph"
+    audit = lucid.audit(fixture, output_format="json")
+    source_graph = audit.get("source_graph")
+    if not isinstance(source_graph, list):
+        fail("audit JSON did not expose source_graph")
+
+    by_path = {
+        node.get("path"): node.get("references")
+        for node in source_graph
+        if isinstance(node, dict)
+    }
+    agents_refs = by_path.get("AGENTS.md")
+    if not isinstance(agents_refs, list):
+        fail("source_graph did not include AGENTS.md references")
+
+    expected_agents = {
+        ("docs/product-design.md", 3, "markdown-link"),
+        ("skills/lucid/SKILL.md", 5, "inline-code"),
+        ("README.md", 7, "reference-intent"),
+    }
+    observed_agents = {
+        (item.get("target"), item.get("line"), item.get("kind"))
+        for item in agents_refs
+        if isinstance(item, dict)
+    }
+    for expected in expected_agents:
+        if expected not in observed_agents:
+            fail(f"source_graph missing AGENTS.md edge {expected}")
+    if any(item[0] == "https://example.com/lucid" for item in observed_agents):
+        fail("source_graph included external URL edge")
+
+    product_refs = by_path.get("docs/product-design.md")
+    if not isinstance(product_refs, list):
+        fail("source_graph did not include docs/product-design.md references")
+    if ("skills/lucid/SKILL.md", 3, "markdown-link") not in {
+        (item.get("target"), item.get("line"), item.get("kind"))
+        for item in product_refs
+        if isinstance(item, dict)
+    }:
+        fail("source_graph did not resolve relative markdown link")
+
+
 def validate_ignore_suppressions(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "ignore-suppressions"
     audit = lucid.audit(fixture, output_format="json")
@@ -632,6 +675,7 @@ def main() -> int:
     validate_explicit_config_path(lucid)
     validate_config_schema_validation(lucid)
     validate_policy_pack_loading(lucid)
+    validate_source_graph(lucid)
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
