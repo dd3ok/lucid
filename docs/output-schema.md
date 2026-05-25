@@ -165,9 +165,8 @@ Allowed cleanup actions:
 ## Provenance
 
 Finding `provenance` records deterministic evidence, not model reasoning. It is
-optional and rule-specific. The first provenance field is emitted for
-`stale-reference` findings, where Lucid records the missing candidate path and
-source line that triggered the finding.
+optional and rule-specific. Current provenance covers `stale-reference` and
+`source-of-truth-drift` findings.
 
 Provenance fields:
 
@@ -183,6 +182,25 @@ Provenance fields:
 | `kind` | string | Signal kind, currently `missing-reference`. |
 | `candidate` | string | Referenced local path that did not resolve. |
 | `line` | number | 1-based source line where the candidate appeared. |
+
+`source-of-truth-drift` declaration conflict signal fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `kind` | string | Signal kind, currently `source-of-truth-declaration-conflict`. |
+| `key` | string | Conflicting declaration key, such as `canonical workflow`. |
+| `value` | string | Value found on the current finding line. |
+| `compared_values_count` | number | Count of distinct conflicting values for the key. |
+
+`source-of-truth-drift` near-duplicate signal fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `kind` | string | Signal kind, currently `near-duplicate-policy-block`. |
+| `matched_path` | string | Repository-relative path of the matched duplicate block. |
+| `matched_line_start` | number | 1-based start line of the matched block. |
+| `matched_line_end` | number | 1-based end line of the matched block. |
+| `similarity` | number | Deterministic similarity score that triggered the finding. |
 
 ## Ignore Suppressions
 

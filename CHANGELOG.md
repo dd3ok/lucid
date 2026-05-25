@@ -12,6 +12,7 @@
 - Audit JSON `source_graph` output for deterministic repo-local references
   found in scanned context surfaces.
 - Deterministic `provenance` signals for `stale-reference` findings.
+- Deterministic `provenance` signals for `source-of-truth-drift` findings.
 
 ## v0.2.2 - 2026-05-23
 
