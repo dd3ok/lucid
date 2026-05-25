@@ -312,17 +312,21 @@ def validate_stale_reference_provenance(lucid: ModuleType) -> None:
         fail("stale-reference provenance did not preserve missing reference candidates")
 
 
-def finding_provenance_signal(finding: dict[str, object]) -> dict[str, object] | None:
+def require_single_provenance_signal(
+    finding: dict[str, object], label: str
+) -> dict[str, object]:
     provenance = finding.get("provenance")
     if not isinstance(provenance, dict):
-        return None
+        fail(f"{label} finding did not expose provenance")
     if provenance.get("deterministic") is not True:
-        return None
+        fail(f"{label} provenance is not deterministic")
     signals = provenance.get("signals")
     if not isinstance(signals, list) or len(signals) != 1:
-        return None
+        fail(f"{label} provenance did not expose one signal")
     signal = signals[0]
-    return signal if isinstance(signal, dict) else None
+    if not isinstance(signal, dict):
+        fail(f"{label} provenance signal was not an object")
+    return signal
 
 
 def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
@@ -334,18 +338,18 @@ def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
     ]
     if not drift_findings:
         fail("source-of-truth-drift fixture did not produce findings")
-    declaration_findings = [
-        finding
+    declaration_signals = [
+        require_single_provenance_signal(finding, "source-of-truth-drift")
         for finding in drift_findings
-        if (finding_provenance_signal(finding) or {}).get("kind")
-        == "source-of-truth-declaration-conflict"
     ]
-    if not declaration_findings:
+    declaration_signals = [
+        signal
+        for signal in declaration_signals
+        if signal.get("kind") == "source-of-truth-declaration-conflict"
+    ]
+    if not declaration_signals:
         fail("source-of-truth-drift provenance did not identify declaration conflict")
-    for finding in declaration_findings:
-        signal = finding_provenance_signal(finding)
-        if signal is None:
-            fail("source-of-truth-drift provenance did not expose one signal")
+    for signal in declaration_signals:
         if signal.get("key") != "canonical workflow":
             fail("source-of-truth-drift provenance did not preserve declaration key")
         if signal.get("value") not in {"scan-first", "summarize-first"}:
@@ -363,19 +367,21 @@ def validate_source_of_truth_provenance(lucid: ModuleType) -> None:
     ]
     if not duplicate_findings:
         fail("source-of-truth-near-duplicate fixture did not produce findings")
-    duplicate_signal_findings = [
-        finding
+    duplicate_signals = [
+        require_single_provenance_signal(finding, "near-duplicate source-of-truth")
         for finding in duplicate_findings
-        if (finding_provenance_signal(finding) or {}).get("kind")
-        == "near-duplicate-policy-block"
     ]
-    if not duplicate_signal_findings:
+    unexpected_kinds = [
+        signal.get("kind")
+        for signal in duplicate_signals
+        if signal.get("kind") != "near-duplicate-policy-block"
+    ]
+    if unexpected_kinds:
+        fail(f"near-duplicate provenance had unexpected signal kinds: {unexpected_kinds}")
+    if not duplicate_signals:
         fail("near-duplicate provenance did not identify policy block signal")
     expected_near_duplicate_range = (5, 7)
-    for finding in duplicate_signal_findings:
-        signal = finding_provenance_signal(finding)
-        if signal is None:
-            fail("near-duplicate source-of-truth provenance did not expose one signal")
+    for signal in duplicate_signals:
         if signal.get("matched_path") not in {"AGENTS.md", "README.md"}:
             fail("near-duplicate provenance did not preserve matched path")
         if (
