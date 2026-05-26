@@ -104,6 +104,7 @@ python3 /path/to/lucid/lucid.py audit --root . --format sarif --out .lucid/audit
 ```
 
 GitHub Actions example: [docs/github-actions.md](docs/github-actions.md)
+
 The recommended CI path is to checkout or vendor Lucid and run the local Python
 script directly. Artifact and SARIF uploads remain explicit workflow choices.
 
