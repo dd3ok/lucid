@@ -151,6 +151,7 @@ Every audit finding uses this shape:
 | `requires_manual_review` | boolean | Whether the item needs manual review. |
 | `provenance` | object | Optional deterministic evidence signals for why the finding was reported. |
 | `redaction_preview` | object | Optional safe redaction metadata for `unsafe-context` findings. |
+| `migration_hint` | object | Manual-only target hint for moving, replacing, keeping, or reviewing the finding. |
 | `suppression` | object | Present only in `suppressed_findings`; includes the matched ignore entry. |
 
 Allowed cleanup actions:
@@ -210,6 +211,21 @@ Provenance fields:
 | `kind` | string | Signal kind, currently `compatibility-protected-pattern`. |
 | `pattern` | string | Configured compatibility-protected pattern that matched the finding line. |
 | `line` | number | 1-based source line where the protected pattern appeared. |
+
+## Migration Hints
+
+`migration_hint` is advisory metadata derived from `suggested_action`. It does
+not create, move, delete, or modify files. All migration hints are manual-only
+and are intended to make cleanup plans easier to review.
+
+Migration hint fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `target_kind` | string | Target category such as `reference`, `validator`, `eval`, `pointer`, `keep-with-reason`, `manual-review`, or `removal`. |
+| `target_area` | string | General destination area, not an exact generated path. |
+| `reason` | string | Why this target category matches the finding action. |
+| `manual_only` | boolean | Always `true`; Lucid does not auto-apply migrations. |
 
 ## Ignore Suppressions
 
@@ -366,6 +382,7 @@ Recommended action fields:
 | `requires_manual_review` | boolean | Whether the item needs manual review. |
 | `replacement_hint` | string or null | Suggested replacement direction, if available. |
 | `source_of_truth` | string or null | Canonical source pointer, if known. |
+| `migration_hint` | object | Manual-only target hint copied from the audit finding. |
 | `safety` | string | Non-destructive handling note. |
 | `compatibility_note` | object | Present only for `compatibility-risk` findings. |
 

@@ -163,6 +163,50 @@ PLAN_COMPATIBILITY_NOTE = {
         "Confirm current consumers, migrations, protocol versions, and regression tests."
     ),
 }
+MIGRATION_HINTS = {
+    "remove": {
+        "target_kind": "removal",
+        "target_area": "current context surface",
+        "reason": "Review and remove stale or archived context without moving it elsewhere.",
+        "manual_only": True,
+    },
+    "replace-with-pointer": {
+        "target_kind": "pointer",
+        "target_area": "canonical source-of-truth document",
+        "reason": "Replace duplicated or drifted guidance with a pointer to the canonical source.",
+        "manual_only": True,
+    },
+    "move-to-reference": {
+        "target_kind": "reference",
+        "target_area": "skills/*/references/",
+        "reason": "Move durable detail out of always-loaded context and leave a short pointer.",
+        "manual_only": True,
+    },
+    "move-to-validator": {
+        "target_kind": "validator",
+        "target_area": "scripts/ or eval validators",
+        "reason": "Move enforceable rules into deterministic validation instead of user-facing warnings.",
+        "manual_only": True,
+    },
+    "move-to-eval": {
+        "target_kind": "eval",
+        "target_area": "evals/fixtures/",
+        "reason": "Preserve regression examples in eval fixtures instead of durable guidance.",
+        "manual_only": True,
+    },
+    "keep-with-reason": {
+        "target_kind": "keep-with-reason",
+        "target_area": "current context surface",
+        "reason": "Keep compatibility-sensitive content only with a documented reason.",
+        "manual_only": True,
+    },
+    "manual-review": {
+        "target_kind": "manual-review",
+        "target_area": "human review",
+        "reason": "Defer changes until a reviewer confirms the safe target or action.",
+        "manual_only": True,
+    },
+}
 KNOWN_RULE_IDS = {rule.replace("_", "-") for rule in DEFAULT_CONFIG["rules"]}
 CONFIG_TOP_LEVEL_KEYS = set(DEFAULT_CONFIG) | {"policy_pack"}
 SEVERITY_SCORE_IMPACT = {
@@ -651,6 +695,10 @@ def unsafe_redaction_preview(
     }
 
 
+def migration_hint_for_action(suggested_action: str) -> dict[str, Any]:
+    return dict(MIGRATION_HINTS.get(suggested_action, MIGRATION_HINTS["manual-review"]))
+
+
 def make_finding(
     *,
     rule: str,
@@ -684,6 +732,7 @@ def make_finding(
         "source_of_truth": source_of_truth,
         "confidence": confidence,
         "requires_manual_review": requires_manual_review,
+        "migration_hint": migration_hint_for_action(suggested_action),
     }
     if provenance is not None:
         finding["provenance"] = provenance
@@ -1678,6 +1727,13 @@ def render_plan_markdown(audit_result: dict[str, Any]) -> str:
             lines.append(f"- Replacement hint: {finding['replacement_hint']}")
         if finding.get("source_of_truth"):
             lines.append(f"- Source of truth: {finding['source_of_truth']}")
+        hint = finding.get("migration_hint")
+        if isinstance(hint, dict):
+            target_kind = hint.get("target_kind", "unknown")
+            target_area = hint.get("target_area", "unknown")
+            lines.append(
+                f"- Migration hint: {target_kind} -> {target_area} (manual only)"
+            )
         if finding["rule"] == "compatibility-risk":
             lines.extend(
                 [
@@ -1715,6 +1771,7 @@ def render_plan_json(audit_result: dict[str, Any]) -> str:
             "requires_manual_review": finding["requires_manual_review"],
             "replacement_hint": finding.get("replacement_hint"),
             "source_of_truth": finding.get("source_of_truth"),
+            "migration_hint": finding.get("migration_hint"),
             "safety": PLAN_SAFETY_NOTE,
         }
         if finding["rule"] == "compatibility-risk":

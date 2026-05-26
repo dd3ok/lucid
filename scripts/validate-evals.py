@@ -639,6 +639,87 @@ def validate_redaction_preview(lucid: ModuleType) -> None:
         fail("late helper redaction preview incorrectly marked raw value exposed")
 
 
+def validate_migration_hints(lucid: ModuleType) -> None:
+    cases = [
+        (
+            "fixtures/always-loaded-bloat",
+            "always-loaded-bloat",
+            "reference",
+            "skills/*/references/",
+        ),
+        (
+            "fixtures/obsolete-identifier",
+            "obsolete-identifier",
+            "validator",
+            "scripts/ or eval validators",
+        ),
+        (
+            "fixtures/source-of-truth-drift",
+            "source-of-truth-drift",
+            "pointer",
+            "canonical source-of-truth document",
+        ),
+        (
+            "fixtures/compatibility-safety",
+            "compatibility-risk",
+            "keep-with-reason",
+            "current context surface",
+        ),
+        (
+            "fixtures/unsafe-context",
+            "unsafe-context",
+            "manual-review",
+            "human review",
+        ),
+    ]
+    for fixture_name, rule, target_kind, target_area in cases:
+        audit = lucid.audit(ROOT / fixture_name, output_format="json")
+        finding = next(
+            (item for item in audit["findings"] if item.get("rule") == rule),
+            None,
+        )
+        if not isinstance(finding, dict):
+            fail(f"{rule} fixture did not produce expected finding")
+        hint = finding.get("migration_hint")
+        if not isinstance(hint, dict):
+            fail(f"{rule} finding did not expose migration_hint")
+        if hint.get("target_kind") != target_kind:
+            fail(f"{rule} migration_hint target_kind was not {target_kind}")
+        if hint.get("target_area") != target_area:
+            fail(f"{rule} migration_hint target_area was not {target_area}")
+        if hint.get("manual_only") is not True:
+            fail(f"{rule} migration_hint was not marked manual_only")
+        reason = hint.get("reason")
+        if not isinstance(reason, str) or not reason:
+            fail(f"{rule} migration_hint did not expose a reason")
+
+    plan_audit = lucid.audit(ROOT / "fixtures" / "unsafe-context", output_format="json")
+    plan_json = json.loads(lucid.render_plan_json(plan_audit))
+    action = plan_json["recommended_actions"][0]
+    hint = action.get("migration_hint")
+    if not isinstance(hint, dict) or hint.get("target_kind") != "manual-review":
+        fail("plan JSON did not preserve migration_hint")
+
+    markdown_plan = lucid.render_plan_markdown(plan_audit)
+    if "Migration hint: manual-review -> human review (manual only)" not in markdown_plan:
+        fail("Markdown plan did not include migration_hint")
+
+    legacy_audit = json.loads(json.dumps(plan_audit))
+    legacy_audit["findings"][0]["migration_hint"] = {"target_kind": "manual-review"}
+    legacy_markdown = lucid.render_plan_markdown(legacy_audit)
+    if "Migration hint: manual-review -> unknown (manual only)" not in legacy_markdown:
+        fail("Markdown plan did not handle incomplete migration_hint")
+
+    legacy_audit["findings"][0]["migration_hint"] = "manual-review"
+    legacy_markdown = lucid.render_plan_markdown(legacy_audit)
+    if "Migration hint:" in legacy_markdown:
+        fail("Markdown plan rendered malformed migration_hint")
+
+    fallback_hint = lucid.migration_hint_for_action("future-action")
+    if fallback_hint.get("target_kind") != "manual-review":
+        fail("unknown migration action did not fall back to manual-review")
+
+
 def assert_scoring_consistent(audit: dict[str, object], label: str) -> None:
     findings = audit.get("findings")
     suppressed_findings = audit.get("suppressed_findings")
@@ -879,6 +960,7 @@ def main() -> int:
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
     validate_redaction_preview(lucid)
+    validate_migration_hints(lucid)
     validate_debt_scoring(lucid)
     validate_cli_wrapper()
     print("validate-evals: ok")
