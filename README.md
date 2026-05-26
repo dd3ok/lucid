@@ -163,12 +163,13 @@ roadmap.
 - v0.1: read-only scanner/planner
 - v0.2: skill packaging, CLI wrapper, basic scoring, terminal summaries,
   diff-only suggestions, SARIF
-- v0.3: policy packs and source graph
+- v0.3: policy packs, config validation, source graph, provenance, redaction
+  preview metadata, migration target hints
 - v1.0: stable schemas, packaged skill distribution, optional CI recipes
 
 ## Status
 
-Lucid v0.2.2 is a public alpha. The current package is a read-only context
+Lucid v0.3.0 is a public alpha. The current package is a read-only context
 hygiene scanner, planner, reporter, and review-only patch suggestion tool for
 local validation before applying cleanup changes.
 

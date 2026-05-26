@@ -14,7 +14,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 
-VERSION = "0.2.2"
+VERSION = "0.3.0"
 ALLOWED_ACTIONS = {
     "remove",
     "replace-with-pointer",
