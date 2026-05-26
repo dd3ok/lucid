@@ -2,9 +2,10 @@
 
 ## Unreleased
 
-### Added
+### Fixed
 
-- Nothing yet.
+- Kept the GitHub Actions direct-script checkout example pinned to the current
+  Lucid release version and added docs validation for future drift.
 
 ## v0.3.0 - 2026-05-26
 
