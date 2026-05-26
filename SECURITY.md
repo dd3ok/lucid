@@ -1,11 +1,11 @@
 # Security Policy
 
-Lucid v0.2 is a read-only scanner, planner, reporter, and review-only patch
+Lucid v0.3 is a read-only scanner, planner, reporter, and review-only patch
 suggestion tool for agent-facing context.
 
 ## Supported Versions
 
-Lucid v0.2.x is a public alpha. Security fixes target the latest v0.2.x release
+Lucid v0.3.x is a public alpha. Security fixes target the latest v0.3.x release
 and the `main` branch.
 
 ## Security Model

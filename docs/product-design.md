@@ -137,7 +137,6 @@ This section is the detailed roadmap source of truth for public docs.
 
 GitHub Action productization is out of current scope and should only be
 revisited if direct-script CI usage proves insufficient.
-v0.3 starts with policy pack schema design before runtime loading. Policy packs
-are deterministic config overlays, not plugins or new rule engines.
-Initial v0.3 loading is limited to built-in pack names applied as config
-overlays.
+v0.3 introduced policy pack schema design before runtime loading. Policy packs
+are deterministic config overlays, not plugins or new rule engines. Initial
+v0.3 loading is limited to built-in pack names applied as config overlays.
