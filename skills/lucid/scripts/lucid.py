@@ -1799,6 +1799,49 @@ def sarif_level(severity: str) -> str:
     return "note"
 
 
+def github_actions_level(severity: str) -> str:
+    if severity == "high":
+        return "error"
+    if severity == "medium":
+        return "warning"
+    return "notice"
+
+
+def escape_github_actions_data(value: object) -> str:
+    return (
+        str(value)
+        .replace("%", "%25")
+        .replace("\r", "%0D")
+        .replace("\n", "%0A")
+    )
+
+
+def escape_github_actions_property(value: object) -> str:
+    return (
+        escape_github_actions_data(value)
+        .replace(":", "%3A")
+        .replace(",", "%2C")
+    )
+
+
+def render_github_actions_annotations(audit_result: dict[str, Any]) -> str:
+    lines: list[str] = []
+    for finding in audit_result["findings"]:
+        level = github_actions_level(finding["severity"])
+        file_path = escape_github_actions_property(finding["path"])
+        title = escape_github_actions_property(finding["rule"])
+        message = escape_github_actions_data(
+            f"{finding['id']} {finding['rule']}: {finding['reason']} "
+            f"suggested_action={finding['suggested_action']} "
+            f"requires_manual_review={str(finding['requires_manual_review']).lower()}"
+        )
+        lines.append(
+            f"::{level} file={file_path},line={finding['line_start']},"
+            f"endLine={finding['line_end']},title={title}::{message}"
+        )
+    return "".join(f"{line}\n" for line in lines)
+
+
 def render_sarif(audit_result: dict[str, Any]) -> str:
     audit_result = ensure_scoring_fields(audit_result)
     findings = audit_result["findings"]
@@ -2022,7 +2065,11 @@ def build_parser() -> argparse.ArgumentParser:
     audit_parser = subcommands.add_parser("audit", help="Audit context hygiene findings")
     audit_parser.add_argument("--root", default=".")
     audit_parser.add_argument("--config")
-    audit_parser.add_argument("--format", choices=["json", "terminal", "sarif"], default="terminal")
+    audit_parser.add_argument(
+        "--format",
+        choices=["json", "terminal", "sarif", "github-actions"],
+        default="terminal",
+    )
     audit_parser.add_argument("--out")
 
     plan_parser = subcommands.add_parser("plan", help="Render a cleanup plan")
@@ -2064,6 +2111,8 @@ def main(argv: list[str] | None = None) -> int:
             content = render_json(result)
         elif args.format == "sarif":
             content = render_sarif(result)
+        elif args.format == "github-actions":
+            content = render_github_actions_annotations(result)
         else:
             content = render_terminal_audit(result)
         if args.out:

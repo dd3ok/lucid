@@ -4,7 +4,8 @@
 
 ### Added
 
-- Nothing yet.
+- GitHub Actions annotation output via `audit --format github-actions` for
+  report-only inline CI findings without snippets or raw unsafe values.
 
 ## v0.3.1 - 2026-05-26
 

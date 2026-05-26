@@ -56,6 +56,23 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 ```
 
+## Optional Inline Annotations
+
+Lucid can emit GitHub Actions workflow command annotations for active findings:
+
+```yaml
+- name: Run Lucid annotations
+  run: |
+    mkdir -p .lucid
+    python3 .lucid-tool/lucid.py audit --root . --format github-actions | tee .lucid/audit.annotations.txt
+```
+
+Annotations are parsed from stdout by the GitHub Actions runner. This output
+does not call the GitHub API, does not upload artifacts, and does not require
+`security-events: write`. Annotation messages omit snippets and raw context
+values, including redacted snippets. Use `.lucid/plan.json` or terminal output
+for human review context.
+
 ## Optional Uploads
 
 Upload SARIF and Lucid artifacts only when the repository explicitly wants those
