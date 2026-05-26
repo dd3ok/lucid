@@ -63,6 +63,7 @@ Lucid can emit GitHub Actions workflow command annotations for active findings:
 ```yaml
 - name: Run Lucid annotations
   run: |
+    mkdir -p .lucid
     python3 .lucid-tool/lucid.py audit --root . --format github-actions | tee .lucid/audit.annotations.txt
 ```
 

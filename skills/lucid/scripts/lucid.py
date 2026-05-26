@@ -1825,7 +1825,6 @@ def escape_github_actions_property(value: object) -> str:
 
 
 def render_github_actions_annotations(audit_result: dict[str, Any]) -> str:
-    audit_result = ensure_scoring_fields(audit_result)
     lines: list[str] = []
     for finding in audit_result["findings"]:
         level = github_actions_level(finding["severity"])
@@ -1840,7 +1839,7 @@ def render_github_actions_annotations(audit_result: dict[str, Any]) -> str:
             f"::{level} file={file_path},line={finding['line_start']},"
             f"endLine={finding['line_end']},title={title}::{message}"
         )
-    return "\n".join(lines) + ("\n" if lines else "")
+    return "".join(f"{line}\n" for line in lines)
 
 
 def render_sarif(audit_result: dict[str, Any]) -> str:
