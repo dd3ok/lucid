@@ -7,6 +7,7 @@ import contextlib
 import io
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -609,6 +610,35 @@ def validate_sarif_output(lucid: ModuleType) -> None:
         fail("audit --format sarif did not preserve suppression summary")
 
 
+def validate_redaction_preview(lucid: ModuleType) -> None:
+    audit = lucid.audit(ROOT / "fixtures" / "unsafe-context-long-tail", output_format="json")
+    findings = [
+        finding for finding in audit["findings"] if finding.get("rule") == "unsafe-context"
+    ]
+    if len(findings) != 1:
+        fail("unsafe-context-long-tail did not produce one unsafe-context finding")
+    preview = findings[0].get("redaction_preview")
+    if not isinstance(preview, dict):
+        fail("unsafe-context-long-tail did not expose redaction_preview")
+    detected_kinds = preview.get("detected_kinds")
+    if not isinstance(detected_kinds, list) or "secret-like-token" not in detected_kinds:
+        fail("unsafe-context-long-tail did not preserve detected kind")
+    if preview.get("redaction_applied") is not False:
+        fail("unsafe-context-long-tail incorrectly marked redaction applied")
+    if preview.get("raw_value_exposed") is not False:
+        fail("unsafe-context-long-tail incorrectly marked raw value exposed")
+    serialized = json.dumps(audit, ensure_ascii=False)
+    if "sk-lateabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890" in serialized:
+        fail("unsafe-context-long-tail exposed raw token")
+
+    helper_preview = lucid.unsafe_redaction_preview(
+        "safe prefix " + ("a" * 260) + " LATE_ONLY_SECRET",
+        [(re.compile("LATE_ONLY_SECRET"), "secret-like-token")],
+    )
+    if helper_preview.get("raw_value_exposed") is not False:
+        fail("late helper redaction preview incorrectly marked raw value exposed")
+
+
 def assert_scoring_consistent(audit: dict[str, object], label: str) -> None:
     findings = audit.get("findings")
     suppressed_findings = audit.get("suppressed_findings")
@@ -788,6 +818,26 @@ def main() -> int:
                 if expected_text not in plan:
                     fail(f"{case_path.name} plan missing expected text {expected_text}")
         if case["name"] == "unsafe-context":
+            unsafe_finding = findings[0]
+            redaction_preview = unsafe_finding.get("redaction_preview")
+            if not isinstance(redaction_preview, dict):
+                fail("unsafe-context finding did not expose redaction_preview")
+            detected_kinds = redaction_preview.get("detected_kinds")
+            if not isinstance(detected_kinds, list) or not detected_kinds:
+                fail("unsafe-context redaction_preview did not expose detected_kinds")
+            if not all(isinstance(kind, str) for kind in detected_kinds):
+                fail("unsafe-context redaction_preview detected_kinds were not strings")
+            if "named-secret-assignment" not in detected_kinds:
+                fail("unsafe-context redaction_preview did not identify named secret")
+            if redaction_preview.get("redaction_applied") is not True:
+                fail("unsafe-context redaction_preview did not mark redaction applied")
+            if redaction_preview.get("raw_value_exposed") is not False:
+                fail("unsafe-context redaction_preview did not mark raw value hidden")
+            audit_json_text = json.dumps(audit, ensure_ascii=False)
+            if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in audit_json_text:
+                fail("audit JSON exposed unsafe raw value")
+            if "abcdefghijklmnopqrstuvwxyz123456" in audit_json_text:
+                fail("audit JSON exposed unsafe value suffix")
             stdout = io.StringIO()
             with contextlib.redirect_stdout(stdout):
                 exit_code = lucid.main(
@@ -828,6 +878,7 @@ def main() -> int:
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
+    validate_redaction_preview(lucid)
     validate_debt_scoring(lucid)
     validate_cli_wrapper()
     print("validate-evals: ok")

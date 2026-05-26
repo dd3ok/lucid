@@ -208,9 +208,18 @@ SECRET_OR_HIDDEN_UNSAFE_PATTERNS = [
     NAMED_SECRET_ASSIGNMENT_PATTERN,
     HIDDEN_UNICODE_PATTERN,
 ]
-CONTEXTUAL_UNSAFE_PATTERNS = [
-    re.compile(r"\brm\s+-rf\s+[/~$]"),
+SECRET_OR_HIDDEN_UNSAFE_PATTERN_KINDS = [
+    (SK_DASH_TOKEN_PATTERN, "secret-like-token"),
+    (SK_UNDERSCORE_TOKEN_PATTERN, "secret-like-token"),
+    (AWS_ACCESS_KEY_PATTERN, "aws-access-key"),
+    (PRIVATE_KEY_MARKER_PATTERN, "private-key-marker"),
+    (NAMED_SECRET_ASSIGNMENT_PATTERN, "named-secret-assignment"),
+    (HIDDEN_UNICODE_PATTERN, "hidden-unicode"),
 ]
+CONTEXTUAL_UNSAFE_PATTERN_KINDS = [
+    (re.compile(r"\brm\s+-rf\s+[/~$]"), "contextual-unsafe-shell"),
+]
+CONTEXTUAL_UNSAFE_PATTERNS = [pattern for pattern, _ in CONTEXTUAL_UNSAFE_PATTERN_KINDS]
 ALL_UNSAFE_PATTERNS = SECRET_OR_HIDDEN_UNSAFE_PATTERNS + CONTEXTUAL_UNSAFE_PATTERNS
 POLICY_DRIFT_TERMS = {
     "agent",
@@ -621,6 +630,27 @@ def redact_unsafe_snippet(line: str) -> str:
     return redacted[:240]
 
 
+def unsafe_redaction_preview(
+    line: str, pattern_kinds: list[tuple[re.Pattern[str], str]]
+) -> dict[str, Any]:
+    detected_kinds: list[str] = []
+    for pattern, kind in pattern_kinds:
+        if pattern.search(line) and kind not in detected_kinds:
+            detected_kinds.append(kind)
+    redacted = redact_unsafe_snippet(line)
+    exposed_original = line.strip()[:240]
+    redaction_applied = redacted != exposed_original
+    secret_like_in_exposed = any(
+        kind != "contextual-unsafe-shell" and pattern.search(exposed_original)
+        for pattern, kind in pattern_kinds
+    )
+    return {
+        "detected_kinds": detected_kinds,
+        "redaction_applied": redaction_applied,
+        "raw_value_exposed": secret_like_in_exposed and not redaction_applied,
+    }
+
+
 def make_finding(
     *,
     rule: str,
@@ -636,6 +666,7 @@ def make_finding(
     replacement_hint: str | None = None,
     source_of_truth: str | None = None,
     provenance: dict[str, Any] | None = None,
+    redaction_preview: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if suggested_action not in ALLOWED_ACTIONS:
         raise ValueError(f"unsupported action: {suggested_action}")
@@ -656,6 +687,8 @@ def make_finding(
     }
     if provenance is not None:
         finding["provenance"] = provenance
+    if redaction_preview is not None:
+        finding["redaction_preview"] = redaction_preview
     return finding
 
 
@@ -1094,6 +1127,11 @@ def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
     for index, line in enumerate(lines, start=1):
         inside_fence = in_code_fence(line, fence)
         patterns = SECRET_OR_HIDDEN_UNSAFE_PATTERNS if inside_fence else ALL_UNSAFE_PATTERNS
+        pattern_kinds = (
+            SECRET_OR_HIDDEN_UNSAFE_PATTERN_KINDS
+            if inside_fence
+            else SECRET_OR_HIDDEN_UNSAFE_PATTERN_KINDS + CONTEXTUAL_UNSAFE_PATTERN_KINDS
+        )
         if any(pattern.search(line) for pattern in patterns):
             findings.append(
                 make_finding(
@@ -1108,6 +1146,7 @@ def rule_unsafe_context(path: str, lines: list[str]) -> list[dict[str, Any]]:
                     confidence=0.82,
                     requires_manual_review=True,
                     replacement_hint="Remove sensitive values and rotate credentials if real.",
+                    redaction_preview=unsafe_redaction_preview(line, pattern_kinds),
                 )
             )
     return findings

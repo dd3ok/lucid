@@ -14,6 +14,7 @@
 - Deterministic `provenance` signals for `stale-reference` findings.
 - Deterministic `provenance` signals for `source-of-truth-drift` findings.
 - Deterministic `provenance` signals for `compatibility-risk` findings.
+- Safe `redaction_preview` metadata for `unsafe-context` findings.
 
 ## v0.2.2 - 2026-05-23
 
