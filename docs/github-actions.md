@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dd3ok/lucid
-          ref: v0.3.0
+          ref: v0.3.1
           path: .lucid-tool
 
       - name: Run Lucid audit

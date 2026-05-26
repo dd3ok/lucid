@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Nothing yet.
+
+## v0.3.1 - 2026-05-26
+
 ### Fixed
 
 - Kept the GitHub Actions direct-script checkout example pinned to the current
