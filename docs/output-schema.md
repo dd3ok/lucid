@@ -150,6 +150,7 @@ Every audit finding uses this shape:
 | `score_impact` | number | Deterministic contribution to summary `debt_score`. |
 | `requires_manual_review` | boolean | Whether the item needs manual review. |
 | `provenance` | object | Optional deterministic evidence signals for why the finding was reported. |
+| `redaction_preview` | object | Optional safe redaction metadata for `unsafe-context` findings. |
 | `suppression` | object | Present only in `suppressed_findings`; includes the matched ignore entry. |
 
 Allowed cleanup actions:
@@ -410,6 +411,18 @@ Lucid may redact detected `unsafe-context` snippets before JSON or Markdown
 rendering. Redaction is conservative and best-effort; it is intended to reduce
 accidental echoing of secret-like values, not to replace dedicated secret
 scanning.
+
+`unsafe-context` findings may include `redaction_preview` metadata. This
+metadata describes redaction status only; it must not include raw values,
+prefixes, suffixes, exact secret lengths, samples, or surrounding context.
+
+`redaction_preview` fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `detected_kinds` | array | Stable labels for detected unsafe content kinds, such as `named-secret-assignment`. |
+| `redaction_applied` | boolean | Whether Lucid redacted the reported snippet. |
+| `raw_value_exposed` | boolean | Whether a raw secret-like value is exposed by Lucid output; expected to be `false` for redacted secret-like findings. |
 
 Examples of redacted values include:
 
