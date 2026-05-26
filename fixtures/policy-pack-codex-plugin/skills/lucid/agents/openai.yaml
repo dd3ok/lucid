@@ -1,0 +1,3 @@
+interface:
+  default_prompt: "Use $lucid to audit context."
+  short_description: "Audit context hygiene."

@@ -31,11 +31,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "AGENTS.md",
             "CLAUDE.md",
             "GEMINI.md",
+            "HERMES.md",
             "MEMORY.md",
             "memory.md",
             "SOUL.md",
             "identity.md",
+            ".hermes.md",
             ".cursorrules",
+            ".cursor/rules/*.mdc",
             ".github/copilot-instructions.md",
         ],
         "skill": [
@@ -124,9 +127,19 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
     "generic": {"version": 1},
     "codex": surface_overlay(
         skill=[
+            ".codex/skills/*/SKILL.md",
+            ".codex/skills/*/references/**/*.md",
             ".agents/skills/*/SKILL.md",
             ".agents/skills/*/references/**/*.md",
+            ".agents/plugins/marketplace.json",
+            ".codex-plugin/plugin.json",
+            ".mcp.json",
+            ".app.json",
             "agents/openai.yaml",
+            "skills/*/agents/openai.yaml",
+            "plugins/*/.codex-plugin/plugin.json",
+            "plugins/*/skills/*/SKILL.md",
+            "plugins/*/skills/*/references/**/*.md",
         ],
     ),
     "claude": surface_overlay(
@@ -148,6 +161,22 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
         skill=[
             ".openclaw/skills/*/SKILL.md",
             ".openclaw/skills/*/references/**/*.md",
+            "skills/*/SKILL.md",
+            "skills/*/references/**/*.md",
+        ],
+    ),
+    "hermes": surface_overlay(
+        always_loaded=[
+            ".hermes.md",
+            "HERMES.md",
+            ".cursorrules",
+            ".cursor/rules/*.mdc",
+        ],
+        skill=[
+            ".hermes/skills/*/SKILL.md",
+            ".hermes/skills/*/references/**/*.md",
+            ".hermes/skills/*/*/SKILL.md",
+            ".hermes/skills/*/*/references/**/*.md",
             "skills/*/SKILL.md",
             "skills/*/references/**/*.md",
         ],
@@ -298,7 +327,9 @@ BARE_REFERENCE_FILENAMES = {
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    "HERMES.md",
     "README.md",
+    ".hermes.md",
     "memory.md",
     "MEMORY.md",
 }

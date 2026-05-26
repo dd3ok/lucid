@@ -224,6 +224,45 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
     if ".claude/skills/reviewer/SKILL.md" not in paths:
         fail("claude policy pack did not include .claude skill surface")
 
+    hermes_fixture = ROOT / "fixtures" / "policy-pack-hermes"
+    hermes_scan = lucid.scan(hermes_fixture, output_format="json")
+    hermes_paths = {item.get("path") for item in hermes_scan.get("files", [])}
+    expected_hermes_paths = {
+        ".hermes.md",
+        "HERMES.md",
+        ".cursorrules",
+        ".cursor/rules/context.mdc",
+        ".hermes/skills/lucid/SKILL.md",
+        ".hermes/skills/lucid/references/rules.md",
+        ".hermes/skills/productivity/lucid/SKILL.md",
+        ".hermes/skills/productivity/lucid/references/rules.md",
+    }
+    missing_hermes_paths = sorted(expected_hermes_paths - hermes_paths)
+    if missing_hermes_paths:
+        fail(f"hermes policy pack missed surfaces: {missing_hermes_paths}")
+
+    codex_plugin_fixture = ROOT / "fixtures" / "policy-pack-codex-plugin"
+    codex_plugin_scan = lucid.scan(codex_plugin_fixture, output_format="json")
+    codex_plugin_paths = {
+        item.get("path") for item in codex_plugin_scan.get("files", [])
+    }
+    expected_codex_plugin_paths = {
+        ".codex/skills/lucid/SKILL.md",
+        ".codex/skills/lucid/references/rules.md",
+        ".agents/plugins/marketplace.json",
+        ".codex-plugin/plugin.json",
+        ".mcp.json",
+        ".app.json",
+        "agents/openai.yaml",
+        "skills/lucid/agents/openai.yaml",
+        "plugins/lucid/.codex-plugin/plugin.json",
+        "plugins/lucid/skills/lucid/SKILL.md",
+        "plugins/lucid/skills/lucid/references/rules.md",
+    }
+    missing_codex_plugin_paths = sorted(expected_codex_plugin_paths - codex_plugin_paths)
+    if missing_codex_plugin_paths:
+        fail(f"codex policy pack missed surfaces: {missing_codex_plugin_paths}")
+
     invalid_fixture = ROOT / "fixtures" / "invalid-policy-pack"
     try:
         lucid.scan(invalid_fixture, output_format="json")
