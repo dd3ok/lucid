@@ -13,6 +13,7 @@
   found in scanned context surfaces.
 - Deterministic `provenance` signals for `stale-reference` findings.
 - Deterministic `provenance` signals for `source-of-truth-drift` findings.
+- Deterministic `provenance` signals for `compatibility-risk` findings.
 
 ## v0.2.2 - 2026-05-23
 

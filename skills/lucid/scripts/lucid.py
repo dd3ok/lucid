@@ -762,8 +762,15 @@ def rule_compatibility_risk(
     path: str, lines: list[str], config: dict[str, Any]
 ) -> list[dict[str, Any]]:
     old = re.compile(r"\b(old|legacy|deprecated|backward-compatible)\b", re.I)
+    protected_terms = [
+        term
+        for term in config.get("compatibility_protected_patterns", [])
+        if isinstance(term, str) and term
+    ]
+    if not protected_terms:
+        return []
     protected = re.compile(
-        "|".join(re.escape(term) for term in config["compatibility_protected_patterns"]),
+        "|".join(re.escape(term) for term in protected_terms),
         re.I,
     )
     concrete = re.compile(
@@ -777,6 +784,18 @@ def rule_compatibility_risk(
         if in_code_fence(line, fence):
             continue
         if old.search(line) and protected.search(line) and concrete.search(line):
+            line_lower = line.lower()
+            matched_pattern = max(
+                (
+                    term
+                    for term in protected_terms
+                    if term.lower() in line_lower
+                ),
+                key=len,
+                default="",
+            )
+            if not matched_pattern:
+                continue
             findings.append(
                 make_finding(
                     rule="compatibility-risk",
@@ -790,6 +809,16 @@ def rule_compatibility_risk(
                     confidence=0.78,
                     requires_manual_review=True,
                     replacement_hint="Confirm integrations before removing this content.",
+                    provenance={
+                        "deterministic": True,
+                        "signals": [
+                            {
+                                "kind": "compatibility-protected-pattern",
+                                "pattern": matched_pattern,
+                                "line": index,
+                            }
+                        ],
+                    },
                 )
             )
     return findings

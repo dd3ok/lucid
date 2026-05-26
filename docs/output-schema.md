@@ -166,7 +166,7 @@ Allowed cleanup actions:
 
 Finding `provenance` records deterministic evidence, not model reasoning. It is
 optional and rule-specific. Current provenance covers `stale-reference` and
-`source-of-truth-drift` findings.
+`source-of-truth-drift` and `compatibility-risk` findings.
 
 Provenance fields:
 
@@ -201,6 +201,14 @@ Provenance fields:
 | `matched_line_start` | number | 1-based start line of the matched block. |
 | `matched_line_end` | number | 1-based end line of the matched block. |
 | `similarity` | number | Deterministic similarity score that triggered the finding. |
+
+`compatibility-risk` signal fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `kind` | string | Signal kind, currently `compatibility-protected-pattern`. |
+| `pattern` | string | Configured compatibility-protected pattern that matched the finding line. |
+| `line` | number | 1-based source line where the protected pattern appeared. |
 
 ## Ignore Suppressions
 
