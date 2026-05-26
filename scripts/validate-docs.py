@@ -13,6 +13,7 @@ GITHUB_ACTIONS_DOC = ROOT / "docs" / "github-actions.md"
 POLICY_PACKS_DOC = ROOT / "docs" / "policy-packs.md"
 README = ROOT / "README.md"
 ACTION = ROOT / "action.yml"
+LUCID_SCRIPT = ROOT / "skills" / "lucid" / "scripts" / "lucid.py"
 
 EXPERIMENTAL_ACTION_FORBIDDEN_PATTERNS = [
     (re.compile(r"\bgit\s+apply\b"), "git apply"),
@@ -50,14 +51,26 @@ def forbid_command(text: str, command: str, label: str) -> None:
             fail(f"{label} contains forbidden command: {command}")
 
 
+def read_lucid_version() -> str:
+    if not LUCID_SCRIPT.exists():
+        fail("skills/lucid/scripts/lucid.py is missing")
+    text = LUCID_SCRIPT.read_text(encoding="utf-8")
+    match = re.search(r"^VERSION\s*=\s*['\"]([^'\"]+)['\"]", text, re.MULTILINE)
+    if not match:
+        fail("skills/lucid/scripts/lucid.py is missing VERSION or has an unexpected format")
+    return match.group(1)
+
+
 def validate_github_actions_doc() -> None:
     if not GITHUB_ACTIONS_DOC.exists():
         fail("docs/github-actions.md is missing")
 
     text = GITHUB_ACTIONS_DOC.read_text(encoding="utf-8")
+    version = read_lucid_version()
     required = [
         "direct Python script execution",
         "checkout or vendor Lucid",
+        f"ref: v{version}",
         "mkdir -p .lucid",
         "python3 .lucid-tool/lucid.py audit --root . --format sarif --out .lucid/audit.sarif",
         "python3 .lucid-tool/lucid.py plan --root . --format json --out .lucid/plan.json",
