@@ -103,6 +103,12 @@ Generate report-only SARIF output for code scanning or CI artifacts:
 python3 /path/to/lucid/lucid.py audit --root . --format sarif --out .lucid/audit.sarif
 ```
 
+Emit report-only GitHub Actions annotations for inline CI findings:
+
+```bash
+python3 /path/to/lucid/lucid.py audit --root . --format github-actions
+```
+
 GitHub Actions example: [docs/github-actions.md](docs/github-actions.md)
 
 The recommended CI path is to checkout or vendor Lucid and run the local Python

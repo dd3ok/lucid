@@ -75,6 +75,10 @@ def validate_github_actions_doc() -> None:
         "python3 .lucid-tool/lucid.py audit --root . --format sarif --out .lucid/audit.sarif",
         "python3 .lucid-tool/lucid.py plan --root . --format json --out .lucid/plan.json",
         "python3 .lucid-tool/lucid.py audit --root . --format terminal | tee .lucid/audit.txt",
+        "python3 .lucid-tool/lucid.py audit --root . --format github-actions",
+        "Annotations are parsed from stdout by the GitHub Actions runner.",
+        "does not call the GitHub API",
+        "omit snippets and raw context",
         "$GITHUB_STEP_SUMMARY",
         "security-events: write",
         "github/codeql-action/upload-sarif",
@@ -104,13 +108,20 @@ def validate_github_actions_doc() -> None:
     forbid_command(text, "gh", "docs/github-actions.md")
 
     minimal_start = text.find("## Minimal Report-Only Workflow")
+    annotations_start = text.find("## Optional Inline Annotations")
     optional_start = text.find("## Optional Uploads")
-    if minimal_start == -1 or optional_start == -1 or optional_start < minimal_start:
+    if (
+        minimal_start == -1
+        or annotations_start == -1
+        or optional_start == -1
+        or annotations_start < minimal_start
+        or optional_start < annotations_start
+    ):
         fail(
             "docs/github-actions.md is missing workflow sections "
             "or they are in the wrong order"
         )
-    minimal = text[minimal_start:optional_start]
+    minimal = text[minimal_start:annotations_start]
     if "security-events: write" in minimal:
         fail("minimal GitHub Actions workflow must not require security-events: write")
 

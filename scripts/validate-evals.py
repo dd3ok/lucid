@@ -610,6 +610,133 @@ def validate_sarif_output(lucid: ModuleType) -> None:
         fail("audit --format sarif did not preserve suppression summary")
 
 
+def validate_github_actions_annotations(lucid: ModuleType) -> None:
+    audit_result = {
+        "version": "0.3.1",
+        "root": str(ROOT),
+        "generated_at": "2026-05-26T00:00:00+00:00",
+        "files_scanned": 3,
+        "summary": {"total": 3},
+        "suppressed_findings": [],
+        "findings": [
+            {
+                "id": "LUCID-0001",
+                "rule": "unsafe-context",
+                "severity": "high",
+                "path": "docs/problem:file,one.md",
+                "line_start": 2,
+                "line_end": 3,
+                "snippet": "raw secret sk_test_abcdefghijklmnopqrstuvwxyz123456",
+                "reason": "Unsafe value 100%\nrequires review\rnow",
+                "suggested_action": "manual-review",
+                "confidence": 0.82,
+                "requires_manual_review": True,
+                "replacement_hint": "Remove sensitive values.",
+                "source_of_truth": None,
+                "score_impact": 13,
+            },
+            {
+                "id": "LUCID-0002",
+                "rule": "source-of-truth-drift",
+                "severity": "medium",
+                "path": "README.md",
+                "line_start": 5,
+                "line_end": 5,
+                "snippet": "middle",
+                "reason": "Conflicting source of truth.",
+                "suggested_action": "replace-with-pointer",
+                "confidence": 0.77,
+                "requires_manual_review": False,
+                "replacement_hint": None,
+                "source_of_truth": "docs/product-design.md",
+                "score_impact": 5,
+            },
+            {
+                "id": "LUCID-0003",
+                "rule": "stale-reference",
+                "severity": "low",
+                "path": "AGENTS.md",
+                "line_start": 7,
+                "line_end": 7,
+                "snippet": "low",
+                "reason": "Referenced local path does not exist.",
+                "suggested_action": "manual-review",
+                "confidence": 0.65,
+                "requires_manual_review": True,
+                "replacement_hint": None,
+                "source_of_truth": None,
+                "score_impact": 5,
+            },
+        ],
+    }
+    annotations = lucid.render_github_actions_annotations(audit_result)
+    lines = annotations.splitlines()
+    if len(lines) != 3:
+        fail("github-actions annotations did not emit one line per finding")
+    if not lines[0].startswith(
+        "::error file=docs/problem%3Afile%2Cone.md,line=2,endLine=3,title=unsafe-context::"
+    ):
+        fail("github-actions annotations did not map high severity or escape properties")
+    if "Unsafe value 100%25%0Arequires review%0Dnow" not in lines[0]:
+        fail("github-actions annotations did not escape message data")
+    if "suggested_action=manual-review" not in lines[0]:
+        fail("github-actions annotations did not include suggested action")
+    if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in annotations:
+        fail("github-actions annotations exposed unsafe raw snippet")
+    if not lines[1].startswith("::warning file=README.md,line=5,endLine=5,title=source-of-truth-drift::"):
+        fail("github-actions annotations did not map medium severity to warning")
+    if not lines[2].startswith("::notice file=AGENTS.md,line=7,endLine=7,title=stale-reference::"):
+        fail("github-actions annotations did not map low severity to notice")
+
+    fixture = ROOT / "fixtures" / "unsafe-context"
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "audit",
+                "--root",
+                str(fixture),
+                "--format",
+                "github-actions",
+                "--out",
+                ".lucid/audit.annotations.txt",
+            ]
+        )
+    if exit_code != 0:
+        fail("audit --format github-actions returned non-zero exit code")
+    cli_output = stdout.getvalue()
+    if not cli_output.startswith("::error file=AGENTS.md,line=3,endLine=3,title=unsafe-context::"):
+        fail("audit --format github-actions did not emit expected annotation")
+    if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in cli_output:
+        fail("audit --format github-actions exposed unsafe raw value")
+    if "abcdefghijklmnopqrstuvwxyz123456" in cli_output:
+        fail("audit --format github-actions exposed unsafe raw value suffix")
+    if "Example leaked value" in cli_output or "[redacted]" in cli_output:
+        fail("audit --format github-actions exposed snippet content")
+    annotation_file = fixture / ".lucid" / "audit.annotations.txt"
+    if not annotation_file.exists():
+        fail("audit --format github-actions did not write .lucid/audit.annotations.txt")
+    if annotation_file.read_text(encoding="utf-8") != cli_output:
+        fail("github-actions annotation file did not match stdout")
+
+    suppressed_fixture = ROOT / "fixtures" / "ignore-suppressions"
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            [
+                "audit",
+                "--root",
+                str(suppressed_fixture),
+                "--format",
+                "github-actions",
+            ]
+        )
+    if exit_code != 0:
+        fail("audit --format github-actions returned non-zero exit code for suppressions")
+    if stdout.getvalue().strip():
+        fail("audit --format github-actions emitted suppressed findings")
+
+
 def validate_redaction_preview(lucid: ModuleType) -> None:
     audit = lucid.audit(ROOT / "fixtures" / "unsafe-context-long-tail", output_format="json")
     findings = [
@@ -959,6 +1086,7 @@ def main() -> int:
     validate_ignore_suppressions(lucid)
     validate_diff_suggestions(lucid)
     validate_sarif_output(lucid)
+    validate_github_actions_annotations(lucid)
     validate_redaction_preview(lucid)
     validate_migration_hints(lucid)
     validate_debt_scoring(lucid)

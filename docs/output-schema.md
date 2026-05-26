@@ -282,6 +282,41 @@ Result mapping:
 | `suggested_action` | `properties.suggested_action` |
 | `score_impact` | `properties.score_impact` |
 
+## GitHub Actions Annotation Output
+
+Produced by:
+
+```bash
+python3 lucid.py audit --root . --format github-actions
+```
+
+GitHub Actions annotation output emits workflow command lines to stdout for
+report-only inline CI findings. It is not JSON, does not call the GitHub API,
+does not upload artifacts, and does not require `security-events: write`.
+Suppressed findings are not emitted.
+
+Annotation messages intentionally omit finding snippets and raw context values,
+including redacted snippets. Use audit JSON, plan JSON, or terminal output when
+human review needs excerpt context.
+
+Result mapping:
+
+| Lucid field | GitHub Actions annotation |
+| --- | --- |
+| `severity` | Command level (`high` -> `error`, `medium` -> `warning`, `low` -> `notice`) |
+| `path` | `file` command property |
+| `line_start` | `line` command property |
+| `line_end` | `endLine` command property |
+| `rule` | `title` command property |
+| `id` | Message text |
+| `reason` | Message text |
+| `suggested_action` | Message text |
+| `requires_manual_review` | Message text |
+
+Lucid escapes `%`, carriage returns, and newlines in annotation message data.
+It also escapes `:`, `,`, `%`, carriage returns, and newlines in command
+properties such as `file` and `title`.
+
 ## Plan Markdown
 
 Produced by:
