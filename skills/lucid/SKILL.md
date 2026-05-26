@@ -8,7 +8,7 @@ description: >
   memory cleanup, old instructions, 과거 잔재, 오래된 지침, 프롬프트 부채,
   컨텍스트 정리. Do not use for ordinary README edits, general code refactors,
   normal linting, summarization, or creating a memory bank.
-version: 0.3.0
+version: 0.3.1
 metadata: {"openclaw":{"requires":{"bins":["python3"]}}}
 ---
 
