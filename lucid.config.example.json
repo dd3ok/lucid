@@ -2,6 +2,7 @@
   "version": 1,
   "surfaces": {
     "always_loaded": [
+      "AGENTS.override.md",
       "AGENTS.md",
       "CLAUDE.md",
       "GEMINI.md",

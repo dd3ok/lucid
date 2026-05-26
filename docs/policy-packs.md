@@ -15,7 +15,7 @@ External policy pack files and custom pack loading are not implemented.
 - Keep `SKILL.md` short.
 - Avoid runtime-specific prompt essays.
 - Tune existing deterministic checks without changing Lucid's safety model.
-- Support Codex, Claude, Gemini, OpenClaw, and generic agent contexts.
+- Support Codex, Claude, Gemini, Hermes, OpenClaw, and generic agent contexts.
 
 ## Non-Goals
 
@@ -36,6 +36,7 @@ External policy pack files and custom pack loading are not implemented.
   "description": "Generic agent-facing context policy overlay.",
   "surfaces": {
     "always_loaded": [
+      "AGENTS.override.md",
       "AGENTS.md",
       "CLAUDE.md",
       "GEMINI.md",
@@ -56,9 +57,11 @@ External policy pack files and custom pack loading are not implemented.
   },
   "stale_reference": {
     "bare_filenames": [
+      "AGENTS.override.md",
       "AGENTS.md",
       "CLAUDE.md",
       "GEMINI.md",
+      "HERMES.md",
       "README.md",
       "SKILL.md",
       "memory.md",
@@ -88,15 +91,15 @@ Use `policy_pack` in Lucid config to select a built-in policy overlay:
 }
 ```
 
-Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`, and
-`openclaw`. Unknown pack names fail closed.
+Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`,
+`hermes`, and `openclaw`. Unknown pack names fail closed.
 
 ## Field Notes
 
 | Field | Purpose |
 | --- | --- |
 | `version` | Policy schema version. v0.3 starts with `1`. |
-| `name` | Pack name such as `generic`, `codex`, `claude`, `gemini`, or `openclaw`. |
+| `name` | Pack name such as `generic`, `codex`, `claude`, `gemini`, `hermes`, or `openclaw`. |
 | `extends` | Optional base pack name. Runtime packs should usually extend `generic`. |
 | `description` | Short human-readable summary. |
 | `surfaces` | Context surface globs that tune existing scan categories. |
@@ -110,8 +113,8 @@ Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`, and
 `generic` covers broad agent-facing docs, common memory files, skill
 references, prompts, templates, examples, evals, and fixtures.
 
-`codex` tunes AGENTS.md-heavy workflows, `.agents/skills` paths, and
-`agents/openai.yaml` metadata awareness.
+`codex` tunes AGENTS.md/AGENTS.override.md-heavy workflows, `.agents/skills`
+paths, and packaged skill metadata at `skills/lucid/agents/openai.yaml`.
 
 `claude` tunes `CLAUDE.md`, `.claude/skills` paths, skill references, and
 example-heavy skill layouts.
@@ -119,8 +122,18 @@ example-heavy skill layouts.
 `gemini` tunes `GEMINI.md`, `.gemini/skills` paths, and `.agents/skills`
 alias awareness.
 
-`openclaw` tunes workspace `skills/`, `.openclaw/skills`, and OpenClaw
-metadata constraints.
+`hermes` tunes Hermes project context filenames such as dot-hermes-md and
+`HERMES.md`, repo-local `.hermes/skills`, and standard `skills/` layouts.
+User-level `~/.hermes/skills` and profile-local
+`~/.hermes/profiles/<profile>/skills` live outside a normal repository root;
+audit them by running Lucid with that directory as `--root` or by using an
+explicit in-repo config/export.
+
+`openclaw` tunes workspace `skills/`, workspace `.agents/skills`, optional
+repo-local `.openclaw/skills`, and OpenClaw metadata constraints. Managed
+`~/.openclaw/skills`, user `~/.agents/skills`, and configured
+`skills.load.extraDirs` are outside the workspace root unless explicitly copied
+or scanned as separate roots.
 
 ## Safety Model
 

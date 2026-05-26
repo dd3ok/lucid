@@ -224,6 +224,37 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
     if ".claude/skills/reviewer/SKILL.md" not in paths:
         fail("claude policy pack did not include .claude skill surface")
 
+    codex_fixture = ROOT / "fixtures" / "policy-pack-codex"
+    codex_scan = lucid.scan(codex_fixture, output_format="json")
+    codex_paths = {item.get("path") for item in codex_scan.get("files", [])}
+    if "AGENTS.override.md" not in codex_paths:
+        fail("codex policy pack did not include AGENTS.override.md")
+    if ".agents/skills/codex-reviewer/SKILL.md" not in codex_paths:
+        fail("codex policy pack did not include .agents skill surface")
+    if "skills/codex-reviewer/agents/openai.yaml" not in codex_paths:
+        fail("codex policy pack did not include packaged agents/openai.yaml metadata")
+
+    hermes_fixture = ROOT / "fixtures" / "policy-pack-hermes"
+    hermes_scan = lucid.scan(hermes_fixture, output_format="json")
+    hermes_paths = {item.get("path") for item in hermes_scan.get("files", [])}
+    for expected in {
+        ".hermes.md",
+        "HERMES.md",
+        ".hermes/skills/context-auditor/SKILL.md",
+    }:
+        if expected not in hermes_paths:
+            fail(f"hermes policy pack did not include {expected}")
+
+    openclaw_fixture = ROOT / "fixtures" / "policy-pack-openclaw"
+    openclaw_scan = lucid.scan(openclaw_fixture, output_format="json")
+    openclaw_paths = {item.get("path") for item in openclaw_scan.get("files", [])}
+    for expected in {
+        ".agents/skills/claw-reviewer/SKILL.md",
+        "skills/claw-managed/SKILL.md",
+    }:
+        if expected not in openclaw_paths:
+            fail(f"openclaw policy pack did not include {expected}")
+
     invalid_fixture = ROOT / "fixtures" / "invalid-policy-pack"
     try:
         lucid.scan(invalid_fixture, output_format="json")

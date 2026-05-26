@@ -9,7 +9,7 @@ description: >
   컨텍스트 정리. Do not use for ordinary README edits, general code refactors,
   normal linting, summarization, or creating a memory bank.
 version: 0.3.1
-metadata: {"openclaw":{"requires":{"bins":["python3"]}}}
+metadata: {"openclaw":{"requires":{"bins":["python3"]}},"hermes":{"tags":["context-hygiene","skills","memory","prompt-debt"],"related_skills":["hermes-agent","agent-skill-interoperability"]}}
 ---
 
 # Lucid

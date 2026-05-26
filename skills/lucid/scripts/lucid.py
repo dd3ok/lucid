@@ -28,6 +28,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "version": 1,
     "surfaces": {
         "always_loaded": [
+            "AGENTS.override.md",
             "AGENTS.md",
             "CLAUDE.md",
             "GEMINI.md",
@@ -127,6 +128,7 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
             ".agents/skills/*/SKILL.md",
             ".agents/skills/*/references/**/*.md",
             "agents/openai.yaml",
+            "skills/*/agents/openai.yaml",
         ],
     ),
     "claude": surface_overlay(
@@ -144,8 +146,22 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
             ".agents/skills/*/references/**/*.md",
         ],
     ),
+    "hermes": surface_overlay(
+        always_loaded=[
+            ".hermes.md",
+            "HERMES.md",
+        ],
+        skill=[
+            ".hermes/skills/*/SKILL.md",
+            ".hermes/skills/*/references/**/*.md",
+            "skills/*/SKILL.md",
+            "skills/*/references/**/*.md",
+        ],
+    ),
     "openclaw": surface_overlay(
         skill=[
+            ".agents/skills/*/SKILL.md",
+            ".agents/skills/*/references/**/*.md",
             ".openclaw/skills/*/SKILL.md",
             ".openclaw/skills/*/references/**/*.md",
             "skills/*/SKILL.md",
@@ -295,9 +311,11 @@ SKIP_NEAR_DUPLICATE_HEADINGS = {
     "validation",
 }
 BARE_REFERENCE_FILENAMES = {
+    "AGENTS.override.md",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    "HERMES.md",
     "README.md",
     "memory.md",
     "MEMORY.md",

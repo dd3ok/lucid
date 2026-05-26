@@ -4,7 +4,10 @@ Lucid scans files that agents commonly read or treat as instructions.
 
 ## High-risk always-loaded surfaces
 
+- `AGENTS.override.md`
 - `AGENTS.md`
+- `.hermes.md`
+- `HERMES.md`
 - `CLAUDE.md`
 - `GEMINI.md`
 - `MEMORY.md`

@@ -40,6 +40,7 @@ agent-skills
 codex
 claude-code
 gemini-cli
+hermes-agent
 openai
 chatgpt
 openclaw

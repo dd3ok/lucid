@@ -28,10 +28,56 @@ separate sources of truth.
 
 ### Codex
 
+User skill:
+
 ```bash
 mkdir -p ~/.agents/skills
 ln -s /path/to/lucid/skills/lucid ~/.agents/skills/lucid
 ```
+
+Repo-local skill:
+
+```bash
+mkdir -p .agents/skills
+ln -s ../../skills/lucid .agents/skills/lucid
+```
+
+For Codex-specific audits, enable the built-in policy pack in
+`lucid.config.json`:
+
+```json
+{"version": 1, "policy_pack": "codex"}
+```
+
+Then run `/skills` in Codex and confirm `lucid` appears, or invoke it as
+`$lucid`.
+
+### Hermes Agent
+
+Default profile skill:
+
+```bash
+mkdir -p ~/.hermes/skills
+ln -s /path/to/lucid/skills/lucid ~/.hermes/skills/lucid
+```
+
+Named profile skill:
+
+```bash
+mkdir -p ~/.hermes/profiles/<profile>/skills
+ln -s /path/to/lucid/skills/lucid ~/.hermes/profiles/<profile>/skills/lucid
+```
+
+For Hermes-specific audits, enable the built-in policy pack in
+`lucid.config.json`:
+
+```json
+{"version": 1, "policy_pack": "hermes"}
+```
+
+Hermes skill discovery may require a fresh session or gateway restart before
+newly installed skills are available; verify discovery in the active
+runtime/profile.
 
 ### Claude Code
 
@@ -58,19 +104,47 @@ ln -s /path/to/lucid/skills/lucid ~/.agents/skills/lucid
 
 ### OpenClaw
 
-Workspace skill:
+Native install:
+
+```bash
+openclaw skills install /path/to/lucid/skills/lucid --as lucid
+openclaw skills check --json
+openclaw skills list
+```
+
+Managed global skill (use `--global` only if you intentionally want Lucid
+available to all OpenClaw workspaces; otherwise prefer a workspace-local
+install):
+
+```bash
+openclaw skills install /path/to/lucid/skills/lucid --as lucid --global
+```
+
+Manual workspace skill:
 
 ```bash
 mkdir -p /path/to/workspace/skills
 ln -s /path/to/lucid/skills/lucid /path/to/workspace/skills/lucid
 ```
 
-Managed local skill:
+Manual managed local skill:
 
 ```bash
 mkdir -p ~/.openclaw/skills
 ln -s /path/to/lucid/skills/lucid ~/.openclaw/skills/lucid
 ```
+
+For OpenClaw-specific audits, enable the built-in policy pack in
+`lucid.config.json`:
+
+```json
+{"version": 1, "policy_pack": "openclaw"}
+```
+
+Lucid only scans files whose resolved path remains under `--root`. User/global
+skill directories and symlink targets outside the target root are not included
+in a repo-root audit; audit those directories separately or vendor/copy the
+skill into the scanned tree.
 
 ## Quick Start
 
