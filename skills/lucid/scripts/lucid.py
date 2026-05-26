@@ -38,7 +38,6 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "identity.md",
             ".hermes.md",
             ".cursorrules",
-            ".cursor/rules/*.mdc",
             ".github/copilot-instructions.md",
         ],
         "skill": [
@@ -53,6 +52,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "prompts/**/*.md",
             "templates/**/*.md",
             "examples/**/*.md",
+            ".cursor/rules/*.mdc",
         ],
     },
     "thresholds": {
@@ -83,6 +83,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "AGENTS.md",
             "CLAUDE.md",
             "GEMINI.md",
+            "HERMES.md",
+            ".hermes.md",
             "README.md",
             "skills/*/SKILL.md",
         ],
@@ -166,19 +168,11 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
         ],
     ),
     "hermes": surface_overlay(
-        always_loaded=[
-            ".hermes.md",
-            "HERMES.md",
-            ".cursorrules",
-            ".cursor/rules/*.mdc",
-        ],
         skill=[
             ".hermes/skills/*/SKILL.md",
             ".hermes/skills/*/references/**/*.md",
             ".hermes/skills/*/*/SKILL.md",
             ".hermes/skills/*/*/references/**/*.md",
-            "skills/*/SKILL.md",
-            "skills/*/references/**/*.md",
         ],
     ),
 }
@@ -336,7 +330,7 @@ BARE_REFERENCE_FILENAMES = {
 BARE_REFERENCE_FILENAME_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_./-])"
     r"(?:" + "|".join(re.escape(name) for name in sorted(BARE_REFERENCE_FILENAMES)) + r")"
-    r"(?![A-Za-z0-9_.-])"
+    r"(?![A-Za-z0-9_-]|\.[A-Za-z0-9])"
 )
 REFERENCE_INTENT_PATTERN = re.compile(
     r"\b(read|load|open|check|review|consult|follow|see|refer(?:red|s|ring)?\s+to)\b",
@@ -1001,7 +995,6 @@ def unique_preserve_order(values: list[str]) -> list[str]:
 def is_bare_reference_filename(candidate: str) -> bool:
     return (
         "/" not in candidate
-        and not candidate.startswith(".")
         and candidate in BARE_REFERENCE_FILENAMES
     )
 
@@ -1037,11 +1030,7 @@ def should_check_reference(candidate: str) -> bool:
         return False
     if any(char in candidate for char in "*?[]"):
         return False
-    if (
-        "/" not in candidate
-        and not candidate.startswith(".")
-        and not is_bare_reference_filename(candidate)
-    ):
+    if "/" not in candidate and not is_bare_reference_filename(candidate):
         return False
     return True
 

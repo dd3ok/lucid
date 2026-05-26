@@ -18,9 +18,9 @@ v0.3 policy work from silently accepting misspelled overlays as policy pack
 loading evolves.
 
 Config files may set `policy_pack` to one of Lucid's built-in deterministic
-overlays: `generic`, `codex`, `claude`, `gemini`, or `openclaw`. Unknown pack
-names fail closed. Policy packs tune existing config only; they do not add
-executable hooks or new rule engines.
+overlays: `generic`, `codex`, `claude`, `gemini`, `hermes`, or `openclaw`.
+Unknown pack names fail closed. Policy packs tune existing config only; they
+do not add executable hooks or new rule engines.
 
 ## Scan Output
 

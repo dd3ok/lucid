@@ -5,10 +5,12 @@
       "AGENTS.md",
       "CLAUDE.md",
       "GEMINI.md",
+      "HERMES.md",
       "MEMORY.md",
       "memory.md",
       "SOUL.md",
       "identity.md",
+      ".hermes.md",
       ".cursorrules",
       ".github/copilot-instructions.md"
     ],
@@ -23,7 +25,8 @@
       "docs/**/*.md",
       "prompts/**/*.md",
       "templates/**/*.md",
-      "examples/**/*.md"
+      "examples/**/*.md",
+      ".cursor/rules/*.mdc"
     ]
   },
   "thresholds": {
@@ -54,6 +57,8 @@
       "AGENTS.md",
       "CLAUDE.md",
       "GEMINI.md",
+      "HERMES.md",
+      ".hermes.md",
       "README.md",
       "skills/*/SKILL.md"
     ],
@@ -75,4 +80,3 @@
     "allow_env_read": false
   }
 }
-

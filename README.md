@@ -31,12 +31,15 @@ separate sources of truth.
 User skill:
 
 ```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-ln -s /path/to/lucid/skills/lucid "${CODEX_HOME:-$HOME/.codex}/skills/lucid"
+mkdir -p ~/.agents/skills
+ln -s /path/to/lucid/skills/lucid ~/.agents/skills/lucid
 ```
 
-Some agent hosts also expose `.agents/skills` as a shared cross-agent skill
-path. Treat that as a host convention, not the primary Codex home.
+Codex reads user skills from `$HOME/.agents/skills`, repository skills from
+`.agents/skills` directories between the current working directory and the
+repository root, and admin skills from `/etc/codex/skills`. Some hosts may also
+expose a `CODEX_HOME`-specific skill root; treat that as a host-specific
+convention, not the documented Codex install path.
 
 Repository-local skill for a cloned workspace:
 
@@ -104,6 +107,27 @@ openclaw skills info lucid --json
 Manual workspace or `~/.openclaw/skills` symlinks also work, but managed
 installs make the active `baseDir`, visibility, and requirements easier to
 inspect.
+
+### Runtime Policy Packs
+
+Set `policy_pack` in `lucid.config.json` when auditing runtime-specific
+context layouts:
+
+```json
+{
+  "version": 1,
+  "policy_pack": "codex"
+}
+```
+
+Supported built-in packs are `generic`, `codex`, `claude`, `gemini`,
+`hermes`, and `openclaw`.
+
+Lucid scans only files whose resolved paths remain under `--root`. Global or
+home-directory skill installs such as `~/.agents/skills`, `~/.hermes/skills`,
+or `~/.openclaw/skills` are not included in a repository audit unless you
+audit a parent root that contains those runtime directories or vendor the skill
+into the target root.
 
 ## Quick Start
 

@@ -273,6 +273,48 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
         fail("unknown policy pack was accepted")
 
 
+def validate_hermes_reference_parsing(lucid: ModuleType) -> None:
+    if lucid.is_bare_reference_filename(".hermes.md") is not True:
+        fail(".hermes.md is not treated as a bare reference filename")
+    if lucid.candidate_reference_paths("Use `.hermes.md` formatting."):
+        fail("generic .hermes.md prose produced a stale-reference candidate")
+    if ".hermes.md" not in lucid.candidate_reference_paths("See .hermes.md."):
+        fail("reference-intent prose did not include .hermes.md candidate")
+
+    audit = lucid.audit(
+        ROOT / "fixtures" / "stale-reference-hermes",
+        output_format="json",
+    )
+    stale_findings = [
+        finding
+        for finding in audit["findings"]
+        if finding.get("rule") == "stale-reference"
+    ]
+    candidates = {
+        signal.get("candidate")
+        for finding in stale_findings
+        for signal in (finding.get("provenance") or {}).get("signals", [])
+        if isinstance(signal, dict)
+    }
+    if candidates != {".hermes.md", "HERMES.md"}:
+        fail(f"hermes stale-reference candidates were not exact: {sorted(candidates)}")
+
+
+def validate_hermes_obsolete_identifier(lucid: ModuleType) -> None:
+    audit = lucid.audit(
+        ROOT / "fixtures" / "obsolete-identifier-hermes",
+        output_format="json",
+    )
+    observed = {
+        finding.get("path")
+        for finding in audit["findings"]
+        if finding.get("rule") == "obsolete-identifier"
+    }
+    expected = {".hermes.md", "HERMES.md"}
+    if observed != expected:
+        fail(f"hermes obsolete-identifier paths were not exact: {sorted(observed)}")
+
+
 def validate_source_graph(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "source-graph"
     audit = lucid.audit(fixture, output_format="json")
@@ -1118,6 +1160,8 @@ def main() -> int:
     validate_explicit_config_path(lucid)
     validate_config_schema_validation(lucid)
     validate_policy_pack_loading(lucid)
+    validate_hermes_reference_parsing(lucid)
+    validate_hermes_obsolete_identifier(lucid)
     validate_source_graph(lucid)
     validate_stale_reference_provenance(lucid)
     validate_source_of_truth_provenance(lucid)

@@ -43,8 +43,7 @@ External policy pack files and custom pack loading are not implemented.
       "memory.md",
       "MEMORY.md",
       ".hermes.md",
-      ".cursorrules",
-      ".cursor/rules/*.mdc"
+      ".cursorrules"
     ],
     "skill": [
       "skills/*/SKILL.md",
@@ -55,7 +54,8 @@ External policy pack files and custom pack loading are not implemented.
       "docs/**/*.md",
       "prompts/**/*.md",
       "templates/**/*.md",
-      "examples/**/*.md"
+      "examples/**/*.md",
+      ".cursor/rules/*.mdc"
     ]
   },
   "stale_reference": {
@@ -116,8 +116,8 @@ Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`,
 `generic` covers broad agent-facing docs, common memory files, skill
 references, prompts, templates, examples, evals, and fixtures.
 
-`codex` tunes AGENTS.md-heavy workflows, `$CODEX_HOME/skills`,
-`.codex/skills`, `.agents/skills` host aliases,
+`codex` tunes AGENTS.md-heavy workflows, `$HOME/.agents/skills`,
+repo-local `.agents/skills`, `.codex/skills` host-specific roots,
 `skills/*/agents/openai.yaml` metadata awareness, and plugin metadata such as
 `<plugin-root>/.codex-plugin/plugin.json` and
 `<workspace>/.agents/plugins/marketplace.json`.
@@ -128,8 +128,9 @@ example-heavy skill layouts.
 `gemini` tunes `GEMINI.md`, `.gemini/skills` paths, and `.agents/skills`
 alias awareness.
 
-`hermes` tunes `<repo>/.hermes.md`, `HERMES.md`, `.cursorrules`,
-`.cursor/rules/*.mdc`, and `~/.hermes/skills` style skill layouts.
+`hermes` adds `~/.hermes/skills` style skill layouts on top of the default
+Hermes-aware context surfaces: `<repo>/.hermes.md`, `HERMES.md`,
+`.cursorrules`, and conditional `.cursor/rules/*.mdc` docs.
 
 `openclaw` tunes workspace `skills/`, `.openclaw/skills`, and OpenClaw
 metadata constraints.
