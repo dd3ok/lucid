@@ -37,6 +37,7 @@ and creates a cleanup plan before any edit.
 python3 scripts/validate-skill.py
 python3 scripts/validate-no-dangerous-io.py
 python3 scripts/validate-evals.py
+python3 scripts/validate-docs.py
 python3 scripts/validate-package-skill.py
 python3 skills/lucid/scripts/lucid.py verify --root . --strict
 ```
