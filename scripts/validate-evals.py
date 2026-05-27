@@ -693,7 +693,7 @@ def validate_sarif_output(lucid: ModuleType) -> None:
 
 def validate_github_actions_annotations(lucid: ModuleType) -> None:
     audit_result = {
-        "version": "0.3.1",
+        "version": "0.4.0",
         "root": str(ROOT),
         "generated_at": "2026-05-26T00:00:00+00:00",
         "files_scanned": 3,

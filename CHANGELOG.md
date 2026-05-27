@@ -2,10 +2,23 @@
 
 ## Unreleased
 
+## v0.4.0 - 2026-05-27
+
 ### Added
 
 - GitHub Actions annotation output via `audit --format github-actions` for
   report-only inline CI findings without snippets or raw unsafe values.
+- Expanded runtime compatibility policy coverage and documentation for Codex,
+  Claude, Gemini, Hermes, and OpenClaw context surfaces.
+- OpenAI hosted skill packaging via `package-skill --target openai-hosted`
+  with package-shape validation.
+- README usage boundaries for workspace audits, `verify --strict`,
+  root-scoped stale references, memory review signals, and first adoption.
+
+### Changed
+
+- Clarified local skill archives, Codex plugin distribution, and OpenAI hosted
+  upload archives as separate package shapes.
 
 ## v0.3.1 - 2026-05-26
 
