@@ -7,10 +7,12 @@ Lucid scans files that agents commonly read or treat as instructions.
 - `AGENTS.md`
 - `CLAUDE.md`
 - `GEMINI.md`
+- `HERMES.md`
 - `MEMORY.md`
 - `memory.md`
 - `SOUL.md`
 - `identity.md`
+- `.hermes.md`
 - `.cursorrules`
 - `.github/copilot-instructions.md`
 
@@ -28,6 +30,7 @@ Lucid scans files that agents commonly read or treat as instructions.
 - `prompts/**/*.md`
 - `templates/**/*.md`
 - `examples/**/*.md`
+- `.cursor/rules/*.mdc`
 
 ## Generated or archive surfaces
 
@@ -36,4 +39,3 @@ Lucid scans files that agents commonly read or treat as instructions.
 - `deprecated/**`
 - `old/**`
 - `backups/**`
-

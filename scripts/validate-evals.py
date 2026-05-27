@@ -224,6 +224,45 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
     if ".claude/skills/reviewer/SKILL.md" not in paths:
         fail("claude policy pack did not include .claude skill surface")
 
+    hermes_fixture = ROOT / "fixtures" / "policy-pack-hermes"
+    hermes_scan = lucid.scan(hermes_fixture, output_format="json")
+    hermes_paths = {item.get("path") for item in hermes_scan.get("files", [])}
+    expected_hermes_paths = {
+        ".hermes.md",
+        "HERMES.md",
+        ".cursorrules",
+        ".cursor/rules/context.mdc",
+        ".hermes/skills/lucid/SKILL.md",
+        ".hermes/skills/lucid/references/rules.md",
+        ".hermes/skills/productivity/lucid/SKILL.md",
+        ".hermes/skills/productivity/lucid/references/rules.md",
+    }
+    missing_hermes_paths = sorted(expected_hermes_paths - hermes_paths)
+    if missing_hermes_paths:
+        fail(f"hermes policy pack missed surfaces: {missing_hermes_paths}")
+
+    codex_plugin_fixture = ROOT / "fixtures" / "policy-pack-codex-plugin"
+    codex_plugin_scan = lucid.scan(codex_plugin_fixture, output_format="json")
+    codex_plugin_paths = {
+        item.get("path") for item in codex_plugin_scan.get("files", [])
+    }
+    expected_codex_plugin_paths = {
+        ".codex/skills/lucid/SKILL.md",
+        ".codex/skills/lucid/references/rules.md",
+        ".agents/plugins/marketplace.json",
+        ".codex-plugin/plugin.json",
+        ".mcp.json",
+        ".app.json",
+        "agents/openai.yaml",
+        "skills/lucid/agents/openai.yaml",
+        "plugins/lucid/.codex-plugin/plugin.json",
+        "plugins/lucid/skills/lucid/SKILL.md",
+        "plugins/lucid/skills/lucid/references/rules.md",
+    }
+    missing_codex_plugin_paths = sorted(expected_codex_plugin_paths - codex_plugin_paths)
+    if missing_codex_plugin_paths:
+        fail(f"codex policy pack missed surfaces: {missing_codex_plugin_paths}")
+
     invalid_fixture = ROOT / "fixtures" / "invalid-policy-pack"
     try:
         lucid.scan(invalid_fixture, output_format="json")
@@ -232,6 +271,48 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
             fail("unknown policy pack error did not identify pack name")
     else:
         fail("unknown policy pack was accepted")
+
+
+def validate_hermes_reference_parsing(lucid: ModuleType) -> None:
+    if lucid.is_bare_reference_filename(".hermes.md") is not True:
+        fail(".hermes.md is not treated as a bare reference filename")
+    if lucid.candidate_reference_paths("Use `.hermes.md` formatting."):
+        fail("generic .hermes.md prose produced a stale-reference candidate")
+    if ".hermes.md" not in lucid.candidate_reference_paths("See .hermes.md."):
+        fail("reference-intent prose did not include .hermes.md candidate")
+
+    audit = lucid.audit(
+        ROOT / "fixtures" / "stale-reference-hermes",
+        output_format="json",
+    )
+    stale_findings = [
+        finding
+        for finding in audit["findings"]
+        if finding.get("rule") == "stale-reference"
+    ]
+    candidates = {
+        signal.get("candidate")
+        for finding in stale_findings
+        for signal in (finding.get("provenance") or {}).get("signals", [])
+        if isinstance(signal, dict)
+    }
+    if candidates != {".hermes.md", "HERMES.md"}:
+        fail(f"hermes stale-reference candidates were not exact: {sorted(candidates)}")
+
+
+def validate_hermes_obsolete_identifier(lucid: ModuleType) -> None:
+    audit = lucid.audit(
+        ROOT / "fixtures" / "obsolete-identifier-hermes",
+        output_format="json",
+    )
+    observed = {
+        finding.get("path")
+        for finding in audit["findings"]
+        if finding.get("rule") == "obsolete-identifier"
+    }
+    expected = {".hermes.md", "HERMES.md"}
+    if observed != expected:
+        fail(f"hermes obsolete-identifier paths were not exact: {sorted(observed)}")
 
 
 def validate_source_graph(lucid: ModuleType) -> None:
@@ -1079,6 +1160,8 @@ def main() -> int:
     validate_explicit_config_path(lucid)
     validate_config_schema_validation(lucid)
     validate_policy_pack_loading(lucid)
+    validate_hermes_reference_parsing(lucid)
+    validate_hermes_obsolete_identifier(lucid)
     validate_source_graph(lucid)
     validate_stale_reference_provenance(lucid)
     validate_source_of_truth_provenance(lucid)

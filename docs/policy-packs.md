@@ -15,7 +15,7 @@ External policy pack files and custom pack loading are not implemented.
 - Keep `SKILL.md` short.
 - Avoid runtime-specific prompt essays.
 - Tune existing deterministic checks without changing Lucid's safety model.
-- Support Codex, Claude, Gemini, OpenClaw, and generic agent contexts.
+- Support Codex, Claude, Gemini, Hermes, OpenClaw, and generic agent contexts.
 
 ## Non-Goals
 
@@ -39,8 +39,11 @@ External policy pack files and custom pack loading are not implemented.
       "AGENTS.md",
       "CLAUDE.md",
       "GEMINI.md",
+      "HERMES.md",
       "memory.md",
-      "MEMORY.md"
+      "MEMORY.md",
+      ".hermes.md",
+      ".cursorrules"
     ],
     "skill": [
       "skills/*/SKILL.md",
@@ -51,7 +54,8 @@ External policy pack files and custom pack loading are not implemented.
       "docs/**/*.md",
       "prompts/**/*.md",
       "templates/**/*.md",
-      "examples/**/*.md"
+      "examples/**/*.md",
+      ".cursor/rules/*.mdc"
     ]
   },
   "stale_reference": {
@@ -59,7 +63,9 @@ External policy pack files and custom pack loading are not implemented.
       "AGENTS.md",
       "CLAUDE.md",
       "GEMINI.md",
+      "HERMES.md",
       "README.md",
+      ".hermes.md",
       "SKILL.md",
       "memory.md",
       "MEMORY.md"
@@ -88,15 +94,15 @@ Use `policy_pack` in Lucid config to select a built-in policy overlay:
 }
 ```
 
-Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`, and
-`openclaw`. Unknown pack names fail closed.
+Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`,
+`hermes`, and `openclaw`. Unknown pack names fail closed.
 
 ## Field Notes
 
 | Field | Purpose |
 | --- | --- |
 | `version` | Policy schema version. v0.3 starts with `1`. |
-| `name` | Pack name such as `generic`, `codex`, `claude`, `gemini`, or `openclaw`. |
+| `name` | Pack name such as `generic`, `codex`, `claude`, `gemini`, `hermes`, or `openclaw`. |
 | `extends` | Optional base pack name. Runtime packs should usually extend `generic`. |
 | `description` | Short human-readable summary. |
 | `surfaces` | Context surface globs that tune existing scan categories. |
@@ -110,14 +116,21 @@ Supported built-in pack names are `generic`, `codex`, `claude`, `gemini`, and
 `generic` covers broad agent-facing docs, common memory files, skill
 references, prompts, templates, examples, evals, and fixtures.
 
-`codex` tunes AGENTS.md-heavy workflows, `.agents/skills` paths, and
-`agents/openai.yaml` metadata awareness.
+`codex` tunes AGENTS.md-heavy workflows, `$HOME/.agents/skills`,
+repo-local `.agents/skills`, `.codex/skills` host-specific roots,
+`skills/*/agents/openai.yaml` metadata awareness, and plugin metadata such as
+`<plugin-root>/.codex-plugin/plugin.json` and
+`<workspace>/.agents/plugins/marketplace.json`.
 
 `claude` tunes `CLAUDE.md`, `.claude/skills` paths, skill references, and
 example-heavy skill layouts.
 
 `gemini` tunes `GEMINI.md`, `.gemini/skills` paths, and `.agents/skills`
 alias awareness.
+
+`hermes` adds `~/.hermes/skills` style skill layouts on top of the default
+Hermes-aware context surfaces: `<repo>/.hermes.md`, `HERMES.md`,
+`.cursorrules`, and conditional `.cursor/rules/*.mdc` docs.
 
 `openclaw` tunes workspace `skills/`, `.openclaw/skills`, and OpenClaw
 metadata constraints.

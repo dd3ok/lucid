@@ -28,10 +28,31 @@ separate sources of truth.
 
 ### Codex
 
+User skill:
+
 ```bash
 mkdir -p ~/.agents/skills
 ln -s /path/to/lucid/skills/lucid ~/.agents/skills/lucid
 ```
+
+Codex reads user skills from `$HOME/.agents/skills`, repository skills from
+`.agents/skills` directories between the current working directory and the
+repository root, and admin skills from `/etc/codex/skills`. Some hosts may also
+expose a `CODEX_HOME`-specific skill root; treat that as a host-specific
+convention, not the documented Codex install path.
+
+Repository-local skill for a cloned workspace:
+
+```bash
+mkdir -p .agents/skills
+ln -s ../../skills/lucid .agents/skills/lucid
+```
+
+Reusable Codex plugin distribution is separate from this raw skill folder. If
+you package Lucid as a Codex plugin, include a manifest at
+`<plugin-root>/.codex-plugin/plugin.json` that points at the plugin's
+`skills/` directory instead of treating
+`dist/lucid-skill.zip` as a plugin archive.
 
 ### Claude Code
 
@@ -56,21 +77,57 @@ mkdir -p ~/.agents/skills
 ln -s /path/to/lucid/skills/lucid ~/.agents/skills/lucid
 ```
 
+### Hermes
+
+```bash
+mkdir -p ~/.hermes/skills/productivity
+ln -s /path/to/lucid/skills/lucid ~/.hermes/skills/productivity/lucid
+```
+
+Reload skills or start a new Hermes session after installing. Prefer a copied
+or symlinked skill directory for Lucid's multi-file layout; direct URL installs
+are appropriate only for single-file `SKILL.md` skills.
+
 ### OpenClaw
 
-Workspace skill:
+Managed agent skill:
 
 ```bash
-mkdir -p /path/to/workspace/skills
-ln -s /path/to/lucid/skills/lucid /path/to/workspace/skills/lucid
+openclaw skills install /path/to/lucid/skills/lucid --agent mozzi --as lucid
+openclaw skills info lucid --agent mozzi --json
 ```
 
-Managed local skill:
+Managed global skill:
 
 ```bash
-mkdir -p ~/.openclaw/skills
-ln -s /path/to/lucid/skills/lucid ~/.openclaw/skills/lucid
+openclaw skills install /path/to/lucid/skills/lucid --global --as lucid
+openclaw skills info lucid --json
 ```
+
+Manual workspace or `~/.openclaw/skills` symlinks also work, but managed
+installs make the active `baseDir`, visibility, and requirements easier to
+inspect.
+
+### Runtime Policy Packs
+
+Set `policy_pack` in `lucid.config.json` when auditing runtime-specific
+context layouts:
+
+```json
+{
+  "version": 1,
+  "policy_pack": "codex"
+}
+```
+
+Supported built-in packs are `generic`, `codex`, `claude`, `gemini`,
+`hermes`, and `openclaw`.
+
+Lucid scans only files whose resolved paths remain under `--root`. Global or
+home-directory skill installs such as `~/.agents/skills`, `~/.hermes/skills`,
+or `~/.openclaw/skills` are not included in a repository audit unless you
+audit a parent root that contains those runtime directories or vendor the skill
+into the target root.
 
 ## Quick Start
 
@@ -78,6 +135,8 @@ From a target repository:
 
 The repo-level `lucid.py` wrapper is for cloned repository usage. Packaged or
 runtime-installed skills should invoke `<lucid-skill-dir>/scripts/lucid.py`.
+For OpenClaw managed installs, read `<lucid-skill-dir>` from the `baseDir`
+field in `openclaw skills info lucid --agent <agent> --json`.
 
 ```bash
 python3 /path/to/lucid/lucid.py scan --root . --format terminal
@@ -125,8 +184,11 @@ python3 scripts/package-skill.py
 The archive is written to `dist/lucid-skill.zip` and contains the canonical
 `skills/lucid/` skill contents with repo-level docs, evals, fixtures, generated
 outputs, and cache files excluded.
-The zip archive has `SKILL.md` at its root so compatible runtimes can install
-it as a skill directory.
+The zip archive has `SKILL.md` at its root. Runtimes that install from a
+directory, such as OpenClaw local installs or Hermes multi-file skills, should
+extract the archive first and install the extracted directory. Codex plugin
+distribution requires plugin metadata and is not represented by this raw skill
+archive.
 
 ## Usage
 

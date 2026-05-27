@@ -31,10 +31,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "AGENTS.md",
             "CLAUDE.md",
             "GEMINI.md",
+            "HERMES.md",
             "MEMORY.md",
             "memory.md",
             "SOUL.md",
             "identity.md",
+            ".hermes.md",
             ".cursorrules",
             ".github/copilot-instructions.md",
         ],
@@ -50,6 +52,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "prompts/**/*.md",
             "templates/**/*.md",
             "examples/**/*.md",
+            ".cursor/rules/*.mdc",
         ],
     },
     "thresholds": {
@@ -80,6 +83,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "AGENTS.md",
             "CLAUDE.md",
             "GEMINI.md",
+            "HERMES.md",
+            ".hermes.md",
             "README.md",
             "skills/*/SKILL.md",
         ],
@@ -124,9 +129,19 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
     "generic": {"version": 1},
     "codex": surface_overlay(
         skill=[
+            ".codex/skills/*/SKILL.md",
+            ".codex/skills/*/references/**/*.md",
             ".agents/skills/*/SKILL.md",
             ".agents/skills/*/references/**/*.md",
+            ".agents/plugins/marketplace.json",
+            ".codex-plugin/plugin.json",
+            ".mcp.json",
+            ".app.json",
             "agents/openai.yaml",
+            "skills/*/agents/openai.yaml",
+            "plugins/*/.codex-plugin/plugin.json",
+            "plugins/*/skills/*/SKILL.md",
+            "plugins/*/skills/*/references/**/*.md",
         ],
     ),
     "claude": surface_overlay(
@@ -150,6 +165,14 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
             ".openclaw/skills/*/references/**/*.md",
             "skills/*/SKILL.md",
             "skills/*/references/**/*.md",
+        ],
+    ),
+    "hermes": surface_overlay(
+        skill=[
+            ".hermes/skills/*/SKILL.md",
+            ".hermes/skills/*/references/**/*.md",
+            ".hermes/skills/*/*/SKILL.md",
+            ".hermes/skills/*/*/references/**/*.md",
         ],
     ),
 }
@@ -298,14 +321,16 @@ BARE_REFERENCE_FILENAMES = {
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    "HERMES.md",
     "README.md",
+    ".hermes.md",
     "memory.md",
     "MEMORY.md",
 }
 BARE_REFERENCE_FILENAME_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_./-])"
     r"(?:" + "|".join(re.escape(name) for name in sorted(BARE_REFERENCE_FILENAMES)) + r")"
-    r"(?![A-Za-z0-9_.-])"
+    r"(?![A-Za-z0-9_-]|\.[A-Za-z0-9])"
 )
 REFERENCE_INTENT_PATTERN = re.compile(
     r"\b(read|load|open|check|review|consult|follow|see|refer(?:red|s|ring)?\s+to)\b",
@@ -970,7 +995,6 @@ def unique_preserve_order(values: list[str]) -> list[str]:
 def is_bare_reference_filename(candidate: str) -> bool:
     return (
         "/" not in candidate
-        and not candidate.startswith(".")
         and candidate in BARE_REFERENCE_FILENAMES
     )
 
@@ -1006,11 +1030,7 @@ def should_check_reference(candidate: str) -> bool:
         return False
     if any(char in candidate for char in "*?[]"):
         return False
-    if (
-        "/" not in candidate
-        and not candidate.startswith(".")
-        and not is_bare_reference_filename(candidate)
-    ):
+    if "/" not in candidate and not is_bare_reference_filename(candidate):
         return False
     return True
 
