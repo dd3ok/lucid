@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_SCRIPT = ROOT / "scripts" / "package-skill.py"
 DIST_ZIP = ROOT / "dist" / "lucid-skill.zip"
+OPENAI_HOSTED_ZIP = ROOT / "dist" / "openai" / "lucid.zip"
 
 REQUIRED_ENTRIES = {
     "SKILL.md",
@@ -44,19 +45,24 @@ def fail(message: str) -> None:
     raise SystemExit(f"validate-package-skill: {message}")
 
 
-def validate_member(name: str) -> None:
+def validate_member(name: str, package_root: str | None = None) -> None:
     if name.startswith("/") or name.startswith("../") or "/../" in name:
         fail(f"archive contains unsafe path: {name}")
     if name.endswith("/"):
         return
-    if any(name.startswith(prefix) for prefix in FORBIDDEN_PREFIXES):
+    relative_name = name
+    if package_root is not None:
+        prefix = f"{package_root}/"
+        if name.startswith(prefix):
+            relative_name = name[len(prefix) :]
+    if any(relative_name.startswith(prefix) for prefix in FORBIDDEN_PREFIXES):
         fail(f"archive contains forbidden path: {name}")
-    parts = set(Path(name).parts)
+    parts = set(Path(relative_name).parts)
     if parts & FORBIDDEN_PARTS:
         fail(f"archive contains forbidden cache path: {name}")
-    if name.endswith((".pyc", ".pyo")):
+    if relative_name.endswith((".pyc", ".pyo")):
         fail(f"archive contains compiled Python artifact: {name}")
-    if name.endswith(".DS_Store"):
+    if relative_name.endswith(".DS_Store"):
         fail(f"archive contains platform metadata: {name}")
 
 
@@ -112,12 +118,51 @@ def validate_package_filters(package_module: ModuleType) -> None:
             fail("iter_package_files accepted symlinked file")
 
 
+def validate_raw_local_archive(names: set[str]) -> None:
+    missing = sorted(REQUIRED_ENTRIES - names)
+    if missing:
+        fail(f"raw-local archive missing required entries: {', '.join(missing)}")
+    if "lucid/SKILL.md" in names:
+        fail("raw-local archive unexpectedly contains lucid/SKILL.md")
+
+
+def validate_openai_hosted_archive(names: set[str]) -> None:
+    top_level = {Path(name).parts[0] for name in names if Path(name).parts}
+    if top_level != {"lucid"}:
+        fail(
+            "openai-hosted archive must contain exactly one top-level folder: "
+            + ", ".join(sorted(top_level))
+        )
+    required = {f"lucid/{entry}" for entry in REQUIRED_ENTRIES}
+    missing = sorted(required - names)
+    if missing:
+        fail(f"openai-hosted archive missing required entries: {', '.join(missing)}")
+    if "SKILL.md" in names:
+        fail("openai-hosted archive must not place SKILL.md at archive root")
+
+
 def main() -> None:
     if not PACKAGE_SCRIPT.exists():
         fail("scripts/package-skill.py missing")
 
     package_module = load_package_module()
     validate_package_filters(package_module)
+    expect_failure(
+        "forbidden path under openai-hosted package root",
+        lambda: validate_member("lucid/docs/extra.md", package_root="lucid"),
+    )
+    if package_module.default_output_for("raw-local") != DIST_ZIP:
+        fail("raw-local default output path changed unexpectedly")
+    if package_module.default_output_for("openai-hosted") != OPENAI_HOSTED_ZIP:
+        fail("openai-hosted default output path changed unexpectedly")
+    expect_failure(
+        "unknown package target",
+        lambda: package_module.package_skill(
+            package_module.DEFAULT_SKILL_DIR,
+            DIST_ZIP,
+            target="unknown",
+        ),
+    )
     expect_failure(
         "output outside dist/",
         lambda: package_module.package_skill(
@@ -133,17 +178,28 @@ def main() -> None:
         ),
     )
     package_module.package_skill(package_module.DEFAULT_SKILL_DIR, DIST_ZIP)
+    package_module.package_skill(
+        package_module.DEFAULT_SKILL_DIR,
+        OPENAI_HOSTED_ZIP,
+        target="openai-hosted",
+    )
 
     if not DIST_ZIP.exists():
         fail("dist/lucid-skill.zip was not created")
+    if not OPENAI_HOSTED_ZIP.exists():
+        fail("dist/openai/lucid.zip was not created")
 
     with zipfile.ZipFile(DIST_ZIP) as archive:
         names = set(archive.namelist())
         for name in names:
             validate_member(name)
-        missing = sorted(REQUIRED_ENTRIES - names)
-        if missing:
-            fail(f"archive missing required entries: {', '.join(missing)}")
+        validate_raw_local_archive(names)
+
+    with zipfile.ZipFile(OPENAI_HOSTED_ZIP) as archive:
+        names = set(archive.namelist())
+        for name in names:
+            validate_member(name, package_root="lucid")
+        validate_openai_hosted_archive(names)
 
     print("validate-package-skill: ok")
 

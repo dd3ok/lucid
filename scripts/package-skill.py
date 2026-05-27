@@ -9,6 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SKILL_DIR = ROOT / "skills" / "lucid"
 DEFAULT_OUTPUT = ROOT / "dist" / "lucid-skill.zip"
+DEFAULT_OPENAI_HOSTED_OUTPUT = ROOT / "dist" / "openai" / "lucid.zip"
+PACKAGE_TARGETS = {"raw-local", "openai-hosted"}
 
 EXCLUDED_NAMES = {
     ".DS_Store",
@@ -81,7 +83,21 @@ def assert_safe_archive_name(name: str) -> None:
         fail(f"unsafe archive path: {name}")
 
 
-def package_skill(skill_dir: Path, output: Path) -> None:
+def validate_target(target: str) -> str:
+    if target not in PACKAGE_TARGETS:
+        fail(f"unknown package target: {target}")
+    return target
+
+
+def archive_name_for(path: Path, skill_dir: Path, target: str) -> str:
+    relative_path = path.relative_to(skill_dir).as_posix()
+    if target == "openai-hosted":
+        return f"{skill_dir.name}/{relative_path}"
+    return relative_path
+
+
+def package_skill(skill_dir: Path, output: Path, target: str = "raw-local") -> None:
+    target = validate_target(target)
     skill_dir = validate_skill_dir(skill_dir)
     output = validate_output_path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -92,7 +108,7 @@ def package_skill(skill_dir: Path, output: Path) -> None:
 
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
-            archive_name = path.relative_to(skill_dir).as_posix()
+            archive_name = archive_name_for(path, skill_dir, target)
             assert_safe_archive_name(archive_name)
             archive.write(path, archive_name)
 
@@ -102,21 +118,41 @@ def package_skill(skill_dir: Path, output: Path) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Package the Lucid skill folder")
     parser.add_argument(
+        "--target",
+        choices=sorted(PACKAGE_TARGETS),
+        default="raw-local",
+        help=(
+            "Package target. raw-local keeps SKILL.md at archive root; "
+            "openai-hosted wraps files in a single top-level skill folder."
+        ),
+    )
+    parser.add_argument(
         "--skill-dir",
         default=str(DEFAULT_SKILL_DIR),
         help="Skill directory to package; defaults to skills/lucid",
     )
     parser.add_argument(
         "--out",
-        default=str(DEFAULT_OUTPUT),
-        help="Output zip path under dist/; defaults to dist/lucid-skill.zip",
+        default=None,
+        help=(
+            "Output zip path under dist/. Defaults to dist/lucid-skill.zip "
+            "for raw-local or dist/openai/lucid.zip for openai-hosted."
+        ),
     )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    package_skill(Path(args.skill_dir), Path(args.out))
+    output = Path(args.out) if args.out is not None else default_output_for(args.target)
+    package_skill(Path(args.skill_dir), output, target=args.target)
+
+
+def default_output_for(target: str) -> Path:
+    target = validate_target(target)
+    if target == "openai-hosted":
+        return DEFAULT_OPENAI_HOSTED_OUTPUT
+    return DEFAULT_OUTPUT
 
 
 if __name__ == "__main__":

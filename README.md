@@ -175,10 +175,11 @@ script directly. Artifact and SARIF uploads remain explicit workflow choices.
 
 ## Package
 
-Build a distributable skill archive:
+Build a local/runtime extracted skill archive:
 
 ```bash
 python3 scripts/package-skill.py
+python3 scripts/package-skill.py --target raw-local
 ```
 
 The archive is written to `dist/lucid-skill.zip` and contains the canonical
@@ -189,6 +190,18 @@ directory, such as OpenClaw local installs or Hermes multi-file skills, should
 extract the archive first and install the extracted directory. Codex plugin
 distribution requires plugin metadata and is not represented by this raw skill
 archive.
+
+Build an OpenAI hosted skill upload archive:
+
+```bash
+python3 scripts/package-skill.py --target openai-hosted --out dist/openai/lucid.zip
+```
+
+The OpenAI hosted archive wraps the same skill files under a single top-level
+`lucid/` folder, so the zip contains `lucid/SKILL.md`,
+`lucid/scripts/lucid.py`, `lucid/references/`, and `lucid/agents/openai.yaml`.
+Keep this shape separate from the raw local archive, which intentionally keeps
+`SKILL.md` at the archive root.
 
 ## Usage
 
