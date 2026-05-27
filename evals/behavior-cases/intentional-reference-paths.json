@@ -1,0 +1,12 @@
+{
+  "name": "intentional-reference-paths",
+  "fixture": "fixtures/intentional-reference-paths",
+  "expected_total_findings": 0,
+  "expected_findings": [],
+  "forbidden_findings": [
+    {
+      "rule": "stale-reference",
+      "path": "AGENTS.md"
+    }
+  ]
+}

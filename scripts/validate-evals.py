@@ -173,7 +173,10 @@ def validate_explicit_config_path(lucid: ModuleType) -> None:
         )
     if exit_code != 0:
         fail("plan --config returned non-zero exit code")
-    if "No findings." not in stdout.getvalue():
+    if stdout.getvalue():
+        fail("plan --out wrote plan content to stdout")
+    plan_path = fixture / ".lucid" / "config-plan.md"
+    if "No findings." not in plan_path.read_text(encoding="utf-8"):
         fail("plan --config did not use explicit config")
 
     try:
@@ -392,6 +395,48 @@ def validate_stale_reference_provenance(lucid: ModuleType) -> None:
 
     if expected_candidates != observed_candidates:
         fail("stale-reference provenance did not preserve missing reference candidates")
+
+
+def validate_intentional_reference_paths(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "intentional-reference-paths"
+    audit = lucid.audit(fixture, output_format="json")
+    stale_findings = [
+        finding for finding in audit["findings"] if finding.get("rule") == "stale-reference"
+    ]
+    if stale_findings:
+        candidates = {
+            signal.get("candidate")
+            for finding in stale_findings
+            for signal in (finding.get("provenance") or {}).get("signals", [])
+            if isinstance(signal, dict)
+        }
+        fail(f"intentional reference paths produced stale-reference findings: {candidates}")
+
+
+def validate_out_writes_are_quiet(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "stale-reference"
+    outputs = [
+        ["scan", "--root", str(fixture), "--format", "json", "--out", ".lucid/quiet-scan.json"],
+        [
+            "audit",
+            "--root",
+            str(fixture),
+            "--format",
+            "json",
+            "--out",
+            ".lucid/quiet-audit.json",
+        ],
+        ["plan", "--root", str(fixture), "--out", ".lucid/quiet-plan.md"],
+        ["suggest", "--root", str(fixture), "--out", ".lucid/quiet-suggested.patch"],
+    ]
+    for argv in outputs:
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            exit_code = lucid.main(argv)
+        if exit_code != 0:
+            fail(f"{argv[0]} --out returned non-zero exit code")
+        if stdout.getvalue():
+            fail(f"{argv[0]} --out wrote content to stdout")
 
 
 def require_single_provenance_signal(
@@ -627,7 +672,13 @@ def validate_sarif_output(lucid: ModuleType) -> None:
     if exit_code != 0:
         fail("audit --format sarif returned non-zero exit code")
 
-    sarif = json.loads(stdout.getvalue())
+    if stdout.getvalue():
+        fail("audit --format sarif --out wrote SARIF to stdout")
+    sarif_file = fixture / ".lucid" / "audit.sarif"
+    if not sarif_file.exists():
+        fail("audit --format sarif did not write .lucid/audit.sarif")
+    sarif_text = sarif_file.read_text(encoding="utf-8")
+    sarif = json.loads(sarif_text)
     if sarif.get("version") != "2.1.0":
         fail("audit --format sarif did not emit SARIF 2.1.0")
     if sarif.get("$schema") != "https://json.schemastore.org/sarif-2.1.0.json":
@@ -661,12 +712,6 @@ def validate_sarif_output(lucid: ModuleType) -> None:
     serialized = json.dumps(sarif, ensure_ascii=False)
     if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in serialized:
         fail("audit --format sarif exposed unsafe snippet")
-
-    sarif_file = fixture / ".lucid" / "audit.sarif"
-    if not sarif_file.exists():
-        fail("audit --format sarif did not write .lucid/audit.sarif")
-    if sarif_file.read_text(encoding="utf-8") != stdout.getvalue():
-        fail("audit.sarif did not match stdout SARIF")
 
     suppressed_fixture = ROOT / "fixtures" / "ignore-suppressions"
     stdout = io.StringIO()
@@ -1164,6 +1209,8 @@ def main() -> int:
     validate_hermes_obsolete_identifier(lucid)
     validate_source_graph(lucid)
     validate_stale_reference_provenance(lucid)
+    validate_intentional_reference_paths(lucid)
+    validate_out_writes_are_quiet(lucid)
     validate_source_of_truth_provenance(lucid)
     validate_compatibility_risk_provenance(lucid)
     validate_ignore_suppressions(lucid)
