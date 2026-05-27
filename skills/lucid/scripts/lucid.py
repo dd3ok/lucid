@@ -1038,7 +1038,12 @@ def should_check_reference(candidate: str) -> bool:
 
 
 def is_external_reference_path(candidate: str) -> bool:
-    return candidate.startswith(("$HOME/", "${HOME}/", "$XDG_", "$TMPDIR/"))
+    return bool(
+        re.match(
+            r"^\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})(?:/|$)",
+            candidate,
+        )
+    )
 
 
 def is_template_reference_path(candidate: str) -> bool:
@@ -1049,11 +1054,14 @@ def is_template_reference_path(candidate: str) -> bool:
 def is_template_path_part(part: str) -> bool:
     if re.search(r"\bY{2,4}[-_/]?M{2}[-_/]?D{2}\b", part):
         return True
-    if re.search(r"\bYYYY[-_]MM[-_]DD\b", part):
-        return True
     if re.search(r"\b(?:example|sample|template|placeholder)\b", part, re.I):
         return True
-    return bool(re.search(r"[<{][A-Za-z][A-Za-z0-9_-]*[>}]", part))
+    return bool(
+        re.search(
+            r"<[A-Za-z][A-Za-z0-9_-]*>|\{[A-Za-z][A-Za-z0-9_-]*\}",
+            part,
+        )
+    )
 
 
 def reference_exists(root: Path, file_path: Path, candidate: str) -> bool:

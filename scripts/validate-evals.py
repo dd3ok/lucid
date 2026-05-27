@@ -411,6 +411,14 @@ def validate_intentional_reference_paths(lucid: ModuleType) -> None:
             if isinstance(signal, dict)
         }
         fail(f"intentional reference paths produced stale-reference findings: {candidates}")
+    if lucid.should_check_reference("$PROJECT_ROOT/README.md"):
+        fail("$PROJECT_ROOT path was not treated as an external reference")
+    if lucid.should_check_reference("${XDG_CONFIG_HOME}/lucid/config.json"):
+        fail("${XDG_CONFIG_HOME} path was not treated as an external reference")
+    if lucid.is_template_path_part("<project}"):
+        fail("mismatched angle/brace placeholder was accepted")
+    if lucid.is_template_path_part("{project>"):
+        fail("mismatched brace/angle placeholder was accepted")
 
 
 def validate_out_writes_are_quiet(lucid: ModuleType) -> None:
