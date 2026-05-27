@@ -8,8 +8,8 @@
 
 - GitHub Actions annotation output via `audit --format github-actions` for
   report-only inline CI findings without snippets or raw unsafe values.
-- Runtime compatibility policy coverage and documentation for Codex, Claude,
-  Gemini, Hermes, and OpenClaw context surfaces.
+- Expanded runtime compatibility policy coverage and documentation for Codex,
+  Claude, Gemini, Hermes, and OpenClaw context surfaces.
 - OpenAI hosted skill packaging via `package-skill --target openai-hosted`
   with package-shape validation.
 - README usage boundaries for workspace audits, `verify --strict`,
