@@ -1022,6 +1022,8 @@ def should_check_reference(candidate: str) -> bool:
         return False
     if candidate.startswith(("python ", "python3 ", "python -m ", "python3 -m ")):
         return False
+    if is_external_reference_path(candidate) or is_template_reference_path(candidate):
+        return False
     if re.match(r"^[a-z][a-z0-9+.-]*:", candidate, re.I):
         return False
     if candidate.startswith(("#", "~", "/", "<")):
@@ -1033,6 +1035,33 @@ def should_check_reference(candidate: str) -> bool:
     if "/" not in candidate and not is_bare_reference_filename(candidate):
         return False
     return True
+
+
+def is_external_reference_path(candidate: str) -> bool:
+    return bool(
+        re.match(
+            r"^\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})(?:/|$)",
+            candidate,
+        )
+    )
+
+
+def is_template_reference_path(candidate: str) -> bool:
+    parts = PurePosixPath(candidate).parts
+    return any(is_template_path_part(part) for part in parts)
+
+
+def is_template_path_part(part: str) -> bool:
+    if re.search(r"\bY{2,4}[-_/]?M{2}[-_/]?D{2}\b", part):
+        return True
+    if re.search(r"\b(?:example|sample|template|placeholder)\b", part, re.I):
+        return True
+    return bool(
+        re.search(
+            r"<[A-Za-z][A-Za-z0-9_-]*>|\{[A-Za-z][A-Za-z0-9_-]*\}",
+            part,
+        )
+    )
 
 
 def reference_exists(root: Path, file_path: Path, candidate: str) -> bool:
@@ -2122,7 +2151,8 @@ def main(argv: list[str] | None = None) -> int:
         content = render_json(result) if args.format == "json" else render_terminal_scan(result)
         if args.out:
             safe_write_lucid_output(root, args.out, content)
-        print(content, end="" if content.endswith("\n") else "\n")
+        else:
+            print(content, end="" if content.endswith("\n") else "\n")
         return 0
 
     if args.command == "audit":
@@ -2137,7 +2167,8 @@ def main(argv: list[str] | None = None) -> int:
             content = render_terminal_audit(result)
         if args.out:
             safe_write_lucid_output(root, args.out, content)
-        print(content, end="" if content.endswith("\n") else "\n")
+        if not args.out or args.format == "github-actions":
+            print(content, end="" if content.endswith("\n") else "\n")
         return 0
 
     if args.command == "plan":
@@ -2149,14 +2180,16 @@ def main(argv: list[str] | None = None) -> int:
         )
         default_out = ".lucid/plan.json" if args.format == "json" else ".lucid/plan.md"
         safe_write_lucid_output(root, args.out or default_out, content)
-        print(content, end="" if content.endswith("\n") else "\n")
+        if not args.out:
+            print(content, end="" if content.endswith("\n") else "\n")
         return 0
 
     if args.command == "suggest":
         audit_result = load_audit_for_plan(root, args.audit, config_path=args.config)
         content = render_suggest_patch(root, audit_result)
         safe_write_lucid_output(root, args.out or ".lucid/suggested.patch", content)
-        print(content, end="" if content.endswith("\n") else "\n")
+        if not args.out:
+            print(content, end="" if content.endswith("\n") else "\n")
         return 0
 
     if args.command == "verify":

@@ -161,8 +161,10 @@ reviews. Lucid is a review aid, not a general workspace pass/fail gate.
 `verify --strict` is primarily for validating Lucid's own skill/package
 structure and strict entrypoint limits.
 
-Stale-reference findings are root-scoped. Template paths, examples, and paths
-outside the audited root may require manual review before action.
+Stale-reference findings are root-scoped. Template paths such as
+`memory/YYYY-MM-DD.md` and environment-rooted paths such as
+`$HOME/.watchlist/WATCHLIST.md` are treated as intentional non-local
+references rather than missing repo files.
 
 Memory findings are retention review signals. A finding in `MEMORY.md` does not
 mean the memory should be removed automatically; decide whether it is still

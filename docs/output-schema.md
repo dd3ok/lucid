@@ -12,6 +12,28 @@ Commands that load repository config accept `--config` for an explicit config
 file inside the target root. When omitted, Lucid uses `lucid.config.json` from
 the target root if present.
 
+When `--out` is provided, `scan`, `audit`, `plan`, and `suggest` write the
+requested artifact without echoing the same content to stdout, except
+`audit --format github-actions`, which must still emit annotations to stdout
+for the GitHub Actions runner.
+
+## Reference Path Matching Notes
+
+`stale-reference` checks are root-scoped. Lucid reports missing
+repository-relative references that look like literal local paths.
+
+Lucid skips intentional non-local or template-like references, including:
+
+- environment-rooted paths such as `$HOME/file.md`, `$PROJECT_ROOT/file.md`,
+  and `${XDG_CONFIG_HOME}/file.md`
+- date-template paths such as `memory/YYYY-MM-DD.md`
+- path parts with paired placeholders such as `docs/<project>/README.md` or
+  `docs/{project}/README.md`
+- path parts containing `example`, `sample`, `template`, or `placeholder`
+
+Literal missing repo-relative paths that do not match these forms can still
+produce `stale-reference` findings.
+
 Config files must be JSON objects with `version: 1`. Lucid fails closed on
 unknown top-level keys, unknown rule keys, and type mismatches. This keeps
 v0.3 policy work from silently accepting misspelled overlays as policy pack

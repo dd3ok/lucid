@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- Suppressed duplicate stdout content when `--out` is provided for `scan`,
+  `audit`, `plan`, and `suggest`, while keeping GitHub Actions annotations on
+  stdout.
+- Treated template-style and environment-rooted reference paths as intentional
+  non-local references instead of missing repository files.
+
 ## v0.4.0 - 2026-05-27
 
 ### Added
