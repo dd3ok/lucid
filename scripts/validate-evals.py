@@ -839,6 +839,8 @@ def validate_github_actions_annotations(lucid: ModuleType) -> None:
     if exit_code != 0:
         fail("audit --format github-actions returned non-zero exit code")
     cli_output = stdout.getvalue()
+    if not cli_output.strip():
+        fail("audit --format github-actions --out did not emit stdout annotations")
     if not cli_output.startswith("::error file=AGENTS.md,line=3,endLine=3,title=unsafe-context::"):
         fail("audit --format github-actions did not emit expected annotation")
     if "sk_test_abcdefghijklmnopqrstuvwxyz123456" in cli_output:
