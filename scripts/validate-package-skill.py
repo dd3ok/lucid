@@ -48,18 +48,23 @@ def fail(message: str) -> None:
 def validate_member(name: str, package_root: str | None = None) -> None:
     if name.startswith("/") or name.startswith("../") or "/../" in name:
         fail(f"archive contains unsafe path: {name}")
-    if name.endswith("/"):
-        return
     relative_name = name
     if package_root is not None:
-        prefix = f"{package_root}/"
-        if name.startswith(prefix):
-            relative_name = name[len(prefix) :]
+        root = package_root.rstrip("/")
+        prefix = f"{root}/"
+        normalized_name = name.rstrip("/")
+        if normalized_name == root:
+            return
+        if not name.startswith(prefix):
+            fail(f"archive contains path outside package root: {name}")
+        relative_name = name[len(prefix) :]
     if any(relative_name.startswith(prefix) for prefix in FORBIDDEN_PREFIXES):
         fail(f"archive contains forbidden path: {name}")
     parts = set(Path(relative_name).parts)
     if parts & FORBIDDEN_PARTS:
         fail(f"archive contains forbidden cache path: {name}")
+    if relative_name.endswith("/"):
+        return
     if relative_name.endswith((".pyc", ".pyo")):
         fail(f"archive contains compiled Python artifact: {name}")
     if relative_name.endswith(".DS_Store"):
@@ -150,6 +155,18 @@ def main() -> None:
     expect_failure(
         "forbidden path under openai-hosted package root",
         lambda: validate_member("lucid/docs/extra.md", package_root="lucid"),
+    )
+    expect_failure(
+        "forbidden directory under openai-hosted package root",
+        lambda: validate_member("lucid/docs/", package_root="lucid"),
+    )
+    expect_failure(
+        "path outside openai-hosted package root",
+        lambda: validate_member("outside/file.md", package_root="lucid"),
+    )
+    expect_failure(
+        "directory outside openai-hosted package root",
+        lambda: validate_member("outside/", package_root="lucid"),
     )
     if package_module.default_output_for("raw-local") != DIST_ZIP:
         fail("raw-local default output path changed unexpectedly")
