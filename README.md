@@ -154,6 +154,23 @@ explicit config file inside the target repository.
 Use `lucid.ignore.json` at the target repository root to suppress reviewed
 false positives by `rule`, `path`, and required `reason`.
 
+## Usage Boundaries
+
+Use `scan`, `audit`, and `plan` for repository or workspace context hygiene
+reviews. Lucid is a review aid, not a general workspace pass/fail gate.
+`verify --strict` is primarily for validating Lucid's own skill/package
+structure and strict entrypoint limits.
+
+Stale-reference findings are root-scoped. Template paths, examples, and paths
+outside the audited root may require manual review before action.
+
+Memory findings are retention review signals. A finding in `MEMORY.md` does not
+mean the memory should be removed automatically; decide whether it is still
+useful as durable context.
+
+For initial adoption, install Lucid in a single managed agent or runtime before
+installing it globally across multiple runtimes.
+
 ## CI Reporting
 
 Generate report-only SARIF output for code scanning or CI artifacts:
