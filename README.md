@@ -264,11 +264,12 @@ roadmap.
   diff-only suggestions, SARIF
 - v0.3: policy packs, config validation, source graph, provenance, redaction
   preview metadata, migration target hints
-- v1.0: stable schemas, packaged skill distribution, optional CI recipes
+- v0.4: runtime compatibility docs, hosted package targets, usage boundaries
+- v1.0: stable schemas and optional CI recipes
 
 ## Status
 
-Lucid v0.3.1 is a public alpha. The current package is a read-only context
+Lucid v0.4.0 is a public alpha. The current package is a read-only context
 hygiene scanner, planner, reporter, and review-only patch suggestion tool for
 local validation before applying cleanup changes.
 

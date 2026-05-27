@@ -133,7 +133,8 @@ This section is the detailed roadmap source of truth for public docs.
   diff-only suggestions, SARIF.
 - v0.3: policy pack schema, config validation, source graph, provenance,
   redaction preview metadata, migration target hints.
-- v1.0: stable schemas, packaged skill distribution, optional CI recipes.
+- v0.4: runtime compatibility docs, hosted package targets, usage boundaries.
+- v1.0: stable schemas and optional CI recipes.
 
 GitHub Action productization is out of current scope and should only be
 revisited if direct-script CI usage proves insufficient.
@@ -141,3 +142,7 @@ v0.3 introduced policy pack schema design before runtime loading. Policy packs
 are deterministic config overlays, not plugins or new rule engines. Initial
 v0.3 loading is limited to built-in pack names applied as config overlays:
 `generic`, `codex`, `claude`, `gemini`, `hermes`, and `openclaw`.
+
+v0.4 keeps runtime support explicit without expanding scanner behavior. It
+documents runtime install boundaries, separates local and OpenAI hosted package
+shapes, and records workspace audit usage boundaries.
