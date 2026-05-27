@@ -168,7 +168,7 @@ Memory findings are retention review signals. A finding in `MEMORY.md` does not
 mean the memory should be removed automatically; decide whether it is still
 useful as durable context.
 
-For first adoption, install Lucid in one managed agent or runtime first before
+For initial adoption, install Lucid in a single managed agent or runtime before
 installing it globally across multiple runtimes.
 
 ## CI Reporting
