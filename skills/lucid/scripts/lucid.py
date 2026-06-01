@@ -133,6 +133,7 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
             ".codex/skills/*/references/**/*.md",
             ".agents/skills/*/SKILL.md",
             ".agents/skills/*/references/**/*.md",
+            ".agents/skills/*/agents/openai.yaml",
             ".agents/plugins/marketplace.json",
             ".codex-plugin/plugin.json",
             ".mcp.json",
@@ -168,6 +169,14 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
         ],
     ),
     "hermes": surface_overlay(
+        always_loaded=[
+            "memories/MEMORY.md",
+            "memories/USER.md",
+            ".hermes/SOUL.md",
+            ".hermes/AGENTS.md",
+            ".hermes/memories/MEMORY.md",
+            ".hermes/memories/USER.md",
+        ],
         skill=[
             ".hermes/skills/*/SKILL.md",
             ".hermes/skills/*/references/**/*.md",

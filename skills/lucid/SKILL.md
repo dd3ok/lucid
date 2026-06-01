@@ -1,15 +1,14 @@
 ---
 name: lucid
 description: >
-  Audit and plan cleanup for agent-facing context debt: stale or contradictory
-  instructions, unsafe context, prompt debt, memory bloat, obsolete identifiers,
-  source-of-truth drift, and compatibility risk across agent docs, skills,
-  references, prompts, examples, evals, and fixtures. Use for context hygiene,
-  memory cleanup, old instructions, 과거 잔재, 오래된 지침, 프롬프트 부채,
-  컨텍스트 정리. Do not use for ordinary README edits, general code refactors,
-  normal linting, summarization, or creating a memory bank.
+  Audits stale, unsafe, contradictory, or bloated agent-facing context and
+  produces cleanup plans. Use for prompt debt, obsolete agent instructions,
+  memory cleanup, source-of-truth drift, AGENTS.md-style docs, and skill
+  descriptions, 프롬프트 부채, and 컨텍스트 정리. Do not use for ordinary
+  README edits, general code refactors, linting, summarization, or creating a
+  memory bank.
 version: 0.4.0
-metadata: {"openclaw":{"requires":{"bins":["python3"]}}}
+metadata: {"openclaw":{"requires":{"anyBins":["python3","python"]}}}
 ---
 
 # Lucid

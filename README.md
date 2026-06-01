@@ -129,6 +129,10 @@ or `~/.openclaw/skills` are not included in a repository audit unless you
 audit a parent root that contains those runtime directories or vendor the skill
 into the target root.
 
+For Hermes migration audits, set `policy_pack` to `hermes`. The pack scans
+Hermes SOUL.md, AGENTS.md, memories/MEMORY.md, memories/USER.md, and Hermes
+skill surfaces inside the audited root.
+
 ## Quick Start
 
 From a target repository:
@@ -221,6 +225,14 @@ The OpenAI hosted archive wraps the same skill files under a single top-level
 `lucid/scripts/lucid.py`, `lucid/references/`, and `lucid/agents/openai.yaml`.
 Keep this shape separate from the raw local archive, which intentionally keeps
 `SKILL.md` at the archive root.
+
+Build an OpenAI hosted-skill upload archive:
+
+```bash
+python3 scripts/package-skill.py --target openai-hosted --out dist/openai/lucid.zip
+```
+
+The hosted archive wraps the skill in a single top-level `lucid/` folder.
 
 ## Usage
 

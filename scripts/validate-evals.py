@@ -90,19 +90,17 @@ def validate_trigger_queries() -> None:
 
     description = skill_description()
     required_trigger_terms = [
-        "context hygiene",
+        "agent-facing context",
+        "cleanup plans",
         "prompt debt",
         "memory cleanup",
-        "old instructions",
-        "과거 잔재",
-        "오래된 지침",
-        "프롬프트 부채",
-        "컨텍스트 정리",
+        "obsolete agent instructions",
+        "skill descriptions",
     ]
     required_boundary_terms = [
         "ordinary readme edits",
         "general code refactors",
-        "normal linting",
+        "linting",
         "summarization",
         "creating a memory bank",
     ]
@@ -235,10 +233,20 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
         "HERMES.md",
         ".cursorrules",
         ".cursor/rules/context.mdc",
+        "memories/MEMORY.md",
+        "memories/USER.md",
+        ".hermes/SOUL.md",
+        ".hermes/AGENTS.md",
+        ".hermes/memories/MEMORY.md",
+        ".hermes/memories/USER.md",
         ".hermes/skills/lucid/SKILL.md",
         ".hermes/skills/lucid/references/rules.md",
         ".hermes/skills/productivity/lucid/SKILL.md",
         ".hermes/skills/productivity/lucid/references/rules.md",
+        ".hermes/skills/reviewer/SKILL.md",
+        ".hermes/skills/reviewer/references/guide.md",
+        "skills/reviewer/SKILL.md",
+        "skills/reviewer/references/guide.md",
     }
     missing_hermes_paths = sorted(expected_hermes_paths - hermes_paths)
     if missing_hermes_paths:

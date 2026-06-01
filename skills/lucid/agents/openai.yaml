@@ -1,4 +1,4 @@
 interface:
   display_name: "Lucid"
-  short_description: "Audit stale agent context and prompt debt."
-  default_prompt: "Use $lucid to audit this repository for prompt debt."
+  short_description: "Audit agent context and cleanup prompt debt."
+  default_prompt: "Use $lucid to audit this repository for stale, contradictory, unsafe, or obsolete agent-facing context."

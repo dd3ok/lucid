@@ -146,12 +146,27 @@ def validate_openai_hosted_archive(names: set[str]) -> None:
         fail("openai-hosted archive must not place SKILL.md at archive root")
 
 
+def validate_openai_hosted_fixed_root(package_module: ModuleType) -> None:
+    staged_skill = ROOT / ".lucid" / "package-validation" / "staged-lucid"
+    staged_skill.mkdir(parents=True, exist_ok=True)
+    (staged_skill / "SKILL.md").write_text("---\nname: lucid\n---\n", encoding="utf-8")
+    output = ROOT / "dist" / "openai" / "staged-lucid.zip"
+    package_module.package_skill(staged_skill, output, target="openai-hosted")
+    with zipfile.ZipFile(output) as archive:
+        names = set(archive.namelist())
+    if "lucid/SKILL.md" not in names:
+        fail("openai-hosted target did not use fixed lucid/ top-level folder")
+    if "staged-lucid/SKILL.md" in names:
+        fail("openai-hosted target used source directory name as top-level folder")
+
+
 def main() -> None:
     if not PACKAGE_SCRIPT.exists():
         fail("scripts/package-skill.py missing")
 
     package_module = load_package_module()
     validate_package_filters(package_module)
+    validate_openai_hosted_fixed_root(package_module)
     expect_failure(
         "forbidden path under openai-hosted package root",
         lambda: validate_member("lucid/docs/extra.md", package_root="lucid"),
@@ -217,6 +232,36 @@ def main() -> None:
         for name in names:
             validate_member(name, package_root="lucid")
         validate_openai_hosted_archive(names)
+
+    package_module.package_skill(
+        package_module.DEFAULT_SKILL_DIR,
+        OPENAI_HOSTED_ZIP,
+        target="openai-hosted",
+    )
+    if not OPENAI_HOSTED_ZIP.exists():
+        fail("dist/openai/lucid.zip was not created")
+    with zipfile.ZipFile(OPENAI_HOSTED_ZIP) as archive:
+        names = set(archive.namelist())
+        if "SKILL.md" in names:
+            fail("openai-hosted archive put SKILL.md at zip root")
+        expected_prefix = "lucid/"
+        missing = sorted(
+            f"{expected_prefix}{name}"
+            for name in REQUIRED_ENTRIES
+            if f"{expected_prefix}{name}" not in names
+        )
+        if missing:
+            fail(f"openai-hosted archive missing required entries: {', '.join(missing)}")
+        unexpected_top_level = {
+            name.split("/", 1)[0]
+            for name in names
+            if name and not name.startswith(expected_prefix)
+        }
+        if unexpected_top_level:
+            fail(
+                "openai-hosted archive contains unexpected top-level entries: "
+                + ", ".join(sorted(unexpected_top_level))
+            )
 
     print("validate-package-skill: ok")
 
