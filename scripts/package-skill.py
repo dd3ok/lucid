@@ -140,15 +140,6 @@ def parse_args() -> argparse.Namespace:
             "for raw-local or dist/openai/lucid.zip for openai-hosted."
         ),
     )
-    parser.add_argument(
-        "--target",
-        choices=sorted(TARGETS),
-        default="local-root",
-        help=(
-            "Package layout target. local-root puts SKILL.md at zip root; "
-            "openai-hosted wraps files in a lucid/ top-level folder."
-        ),
-    )
     return parser.parse_args()
 
 
