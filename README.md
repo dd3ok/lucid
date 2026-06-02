@@ -170,8 +170,8 @@ Stale-reference findings are root-scoped. Template paths such as
 `$HOME/.watchlist/WATCHLIST.md` are treated as intentional non-local
 references rather than missing repo files.
 
-Memory findings are retention review signals. A finding in `MEMORY.md` does not
-mean the memory should be removed automatically; decide whether it is still
+Memory findings are retention review signals. A finding in a memory file does
+not mean the memory should be removed automatically; decide whether it is still
 useful as durable context.
 
 For initial adoption, install Lucid in a single managed agent or runtime before
@@ -221,18 +221,8 @@ python3 scripts/package-skill.py --target openai-hosted --out dist/openai/lucid.
 ```
 
 The OpenAI hosted archive wraps the same skill files under a single top-level
-`lucid/` folder, so the zip contains `lucid/SKILL.md`,
-`lucid/scripts/lucid.py`, `lucid/references/`, and `lucid/agents/openai.yaml`.
-Keep this shape separate from the raw local archive, which intentionally keeps
-`SKILL.md` at the archive root.
-
-Build an OpenAI hosted-skill upload archive:
-
-```bash
-python3 scripts/package-skill.py --target openai-hosted --out dist/openai/lucid.zip
-```
-
-The hosted archive wraps the skill in a single top-level `lucid/` folder.
+`lucid/` folder. Keep this shape separate from the raw local archive, which
+intentionally keeps `SKILL.md` at the archive root.
 
 ## Usage
 

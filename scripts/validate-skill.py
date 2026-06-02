@@ -150,12 +150,48 @@ def validate_lucid_openclaw_runtime_metadata(fields: dict[str, str]) -> None:
     if raw is None:
         fail("Lucid SKILL.md must declare OpenClaw runtime metadata")
     metadata = json.loads(raw)
-    requires = metadata.get("openclaw", {}).get("requires", {})
+    if not isinstance(metadata, dict):
+        fail("Lucid OpenClaw metadata must be a JSON object")
+
+    openclaw = metadata.get("openclaw") or {}
+    if not isinstance(openclaw, dict):
+        fail("Lucid OpenClaw metadata.openclaw must be an object")
+
+    requires = openclaw.get("requires") or {}
+    if not isinstance(requires, dict):
+        fail("Lucid OpenClaw metadata.openclaw.requires must be an object")
+
     any_bins = requires.get("anyBins")
     if any_bins != ["python3", "python"]:
         fail('Lucid OpenClaw metadata must use anyBins ["python3", "python"]')
     if "bins" in requires:
         fail("Lucid OpenClaw metadata must not require only python3")
+
+
+def expect_lucid_openclaw_runtime_metadata_failure(
+    fields: dict[str, str], expected: str
+) -> None:
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            validate_lucid_openclaw_runtime_metadata(fields)
+    except SystemExit:
+        return
+    fail(f"Lucid OpenClaw runtime metadata regression was accepted: {expected}")
+
+
+def validate_lucid_openclaw_runtime_metadata_regressions() -> None:
+    expect_lucid_openclaw_runtime_metadata_failure(
+        {"metadata": "null"},
+        "metadata null",
+    )
+    expect_lucid_openclaw_runtime_metadata_failure(
+        {"metadata": '{"openclaw":null}'},
+        "openclaw null",
+    )
+    expect_lucid_openclaw_runtime_metadata_failure(
+        {"metadata": '{"openclaw":{"requires":null}}'},
+        "requires null",
+    )
 
 
 def validate_description_quality(description: str) -> None:
@@ -172,6 +208,8 @@ def validate_description_quality(description: str) -> None:
         fail("frontmatter description must front-load Lucid's core trigger")
     required_terms = [
         "prompt debt",
+        "프롬프트 부채",
+        "컨텍스트 정리",
         "obsolete agent instructions",
         "memory cleanup",
         "source-of-truth drift",
@@ -277,6 +315,7 @@ def main() -> int:
     validate_openclaw_metadata(fields, frontmatter)
     validate_openclaw_metadata_regressions()
     validate_lucid_openclaw_runtime_metadata(fields)
+    validate_lucid_openclaw_runtime_metadata_regressions()
     validate_openai_yaml()
 
     required_refs = [

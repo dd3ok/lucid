@@ -93,6 +93,8 @@ def validate_trigger_queries() -> None:
         "agent-facing context",
         "cleanup plans",
         "prompt debt",
+        "프롬프트 부채",
+        "컨텍스트 정리",
         "memory cleanup",
         "obsolete agent instructions",
         "skill descriptions",
@@ -110,6 +112,11 @@ def validate_trigger_queries() -> None:
     for term in required_boundary_terms:
         if term.lower() not in description:
             fail(f"SKILL.md description missing boundary term: {term}")
+
+    required_korean_query_terms = ["프롬프트 부채", "컨텍스트 정리", "오래된 지침"]
+    for term in required_korean_query_terms:
+        if not any(term in query for query in should_trigger):
+            fail(f"trigger-queries.json missing Korean trigger query term: {term}")
 
 
 def validate_plan_audit_input_scope(lucid: ModuleType) -> None:
