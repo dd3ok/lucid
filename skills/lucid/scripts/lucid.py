@@ -1562,13 +1562,18 @@ def apply_suppressions(
     if not suppressions:
         return findings, []
 
+    suppression_lookup: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for item in suppressions:
+        suppression_lookup.setdefault((item["rule"], item["path"]), []).append(item)
+
     active: list[dict[str, Any]] = []
     suppressed: list[dict[str, Any]] = []
     for finding in findings:
+        candidates = suppression_lookup.get((finding["rule"], finding["path"]), [])
         suppression = next(
             (
                 item
-                for item in suppressions
+                for item in candidates
                 if finding_matches_suppression(finding, item)
             ),
             None,
