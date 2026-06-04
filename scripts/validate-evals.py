@@ -663,6 +663,38 @@ def validate_ignore_suppressions(lucid: ModuleType) -> None:
     if not isinstance(suppression, dict) or suppression.get("candidate") != "lucid/SKILL.md":
         fail("candidate-level suppression metadata did not preserve candidate")
 
+    _, ordered_suppressed = lucid.apply_suppressions(
+        [
+            {
+                "rule": "stale-reference",
+                "path": "README.md",
+                "provenance": {
+                    "signals": [
+                        {"candidate": "lucid/SKILL.md"},
+                    ],
+                },
+            }
+        ],
+        [
+            {
+                "rule": "stale-reference",
+                "path": "README.md",
+                "reason": "Broad fallback suppression.",
+            },
+            {
+                "rule": "stale-reference",
+                "path": "README.md",
+                "candidate": "lucid/SKILL.md",
+                "reason": "Specific candidate suppression.",
+            },
+        ],
+    )
+    if not ordered_suppressed:
+        fail("specific suppression precedence fixture did not suppress finding")
+    ordered_suppression = ordered_suppressed[0].get("suppression", {})
+    if ordered_suppression.get("candidate") != "lucid/SKILL.md":
+        fail("candidate-specific suppression should take precedence over broad suppression")
+
 
 def validate_diff_suggestions(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "archive-autoload"

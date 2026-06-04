@@ -1570,14 +1570,25 @@ def apply_suppressions(
     suppressed: list[dict[str, Any]] = []
     for finding in findings:
         candidates = suppression_lookup.get((finding["rule"], finding["path"]), [])
-        suppression = next(
+        specific = next(
             (
                 item
                 for item in candidates
-                if finding_matches_suppression(finding, item)
+                if item.get("candidate") is not None
+                and finding_matches_suppression(finding, item)
             ),
             None,
         )
+        broad = next(
+            (
+                item
+                for item in candidates
+                if item.get("candidate") is None
+                and finding_matches_suppression(finding, item)
+            ),
+            None,
+        )
+        suppression = specific or broad
         if suppression is None:
             active.append(finding)
             continue
