@@ -557,6 +557,23 @@ def validate_compatibility_risk_provenance(lucid: ModuleType) -> None:
         fail("empty compatibility_protected_patterns produced compatibility-risk finding")
 
 
+def stale_reference_candidates(findings: list[dict[str, object]]) -> set[str]:
+    candidates: set[str] = set()
+    for finding in findings:
+        if finding.get("rule") != "stale-reference":
+            continue
+        provenance = finding.get("provenance", {})
+        if not isinstance(provenance, dict):
+            continue
+        signals = provenance.get("signals", [])
+        if not isinstance(signals, list):
+            continue
+        for signal in signals:
+            if isinstance(signal, dict) and isinstance(signal.get("candidate"), str):
+                candidates.add(signal["candidate"])
+    return candidates
+
+
 def validate_ignore_suppressions(lucid: ModuleType) -> None:
     fixture = ROOT / "fixtures" / "ignore-suppressions"
     audit = lucid.audit(fixture, output_format="json")
@@ -628,6 +645,55 @@ def validate_ignore_suppressions(lucid: ModuleType) -> None:
             fail("duplicate lucid.ignore.json error did not identify duplicate rule/path")
     else:
         fail("duplicate lucid.ignore.json was accepted")
+
+    candidate_fixture = ROOT / "fixtures" / "stale-reference-candidate-suppression"
+    candidate_audit = lucid.audit(candidate_fixture, output_format="json")
+    active_candidates = stale_reference_candidates(candidate_audit["findings"])
+    if "lucid/SKILL.md" in active_candidates:
+        fail("candidate-level suppression left reviewed stale-reference active")
+    if "docs/missing.md" not in active_candidates:
+        fail("candidate-level suppression hid unsuppressed stale-reference in same file")
+    candidate_suppressed = candidate_audit.get("suppressed_findings")
+    if not isinstance(candidate_suppressed, list) or len(candidate_suppressed) != 1:
+        fail("candidate-level suppression did not expose exactly one suppressed finding")
+    suppressed_candidates = stale_reference_candidates(candidate_suppressed)
+    if suppressed_candidates != {"lucid/SKILL.md"}:
+        fail("candidate-level suppression did not preserve exact suppressed candidate")
+    suppression = candidate_suppressed[0].get("suppression", {})
+    if not isinstance(suppression, dict) or suppression.get("candidate") != "lucid/SKILL.md":
+        fail("candidate-level suppression metadata did not preserve candidate")
+
+    _, ordered_suppressed = lucid.apply_suppressions(
+        [
+            {
+                "rule": "stale-reference",
+                "path": "README.md",
+                "provenance": {
+                    "signals": [
+                        {"candidate": "lucid/SKILL.md"},
+                    ],
+                },
+            }
+        ],
+        [
+            {
+                "rule": "stale-reference",
+                "path": "README.md",
+                "reason": "Broad fallback suppression.",
+            },
+            {
+                "rule": "stale-reference",
+                "path": "README.md",
+                "candidate": "lucid/SKILL.md",
+                "reason": "Specific candidate suppression.",
+            },
+        ],
+    )
+    if not ordered_suppressed:
+        fail("specific suppression precedence fixture did not suppress finding")
+    ordered_suppression = ordered_suppressed[0].get("suppression", {})
+    if ordered_suppression.get("candidate") != "lucid/SKILL.md":
+        fail("candidate-specific suppression should take precedence over broad suppression")
 
 
 def validate_diff_suggestions(lucid: ModuleType) -> None:

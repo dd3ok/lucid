@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "suppressions": [
+    {
+      "rule": "stale-reference",
+      "path": "README.md",
+      "candidate": "lucid/SKILL.md",
+      "reason": "Intentional OpenAI hosted archive path documented under the archive top-level folder."
+    },
+    {
+      "rule": "stale-reference",
+      "path": "README.md",
+      "candidate": "lucid/scripts/lucid.py",
+      "reason": "Intentional OpenAI hosted archive path documented under the archive top-level folder."
+    },
+    {
+      "rule": "stale-reference",
+      "path": "README.md",
+      "candidate": "lucid/agents/openai.yaml",
+      "reason": "Intentional OpenAI hosted archive path documented under the archive top-level folder."
+    }
+  ]
+}

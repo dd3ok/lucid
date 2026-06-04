@@ -521,13 +521,14 @@ def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
         raise SystemExit("lucid.ignore.json suppressions must be a list")
 
     validated: list[dict[str, str]] = []
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[str, str, str | None]] = set()
     for index, suppression in enumerate(suppressions, start=1):
         if not isinstance(suppression, dict):
             raise SystemExit(f"lucid.ignore.json suppression {index} must be an object")
         rule = suppression.get("rule")
         path = suppression.get("path")
         reason = suppression.get("reason")
+        candidate = suppression.get("candidate")
         if not isinstance(rule, str) or not rule.strip():
             raise SystemExit(
                 f"lucid.ignore.json suppression {index} rule must be a non-empty string"
@@ -535,6 +536,15 @@ def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
         rule = rule.strip()
         if rule not in KNOWN_RULE_IDS:
             raise SystemExit(f"lucid.ignore.json suppression {index} has unknown rule: {rule}")
+        if candidate is not None and rule != "stale-reference":
+            raise SystemExit(
+                f"lucid.ignore.json suppression {index} candidate is only supported "
+                "for stale-reference"
+            )
+        if candidate is not None and (not isinstance(candidate, str) or not candidate.strip()):
+            raise SystemExit(
+                f"lucid.ignore.json suppression {index} candidate must be a non-empty string"
+            )
         if not isinstance(path, str) or not path.strip():
             raise SystemExit(
                 f"lucid.ignore.json suppression {index} path must be a non-empty string"
@@ -546,20 +556,25 @@ def load_ignore_suppressions(root: Path) -> list[dict[str, str]]:
         normalized_path = normalize_repo_path(
             path.strip(), f"lucid.ignore.json suppression {index} path"
         )
-        key = (rule, normalized_path)
+        normalized_candidate = candidate.strip() if isinstance(candidate, str) else None
+        key = (rule, normalized_path, normalized_candidate)
         if key in seen:
+            duplicate_label = f"{rule} {normalized_path}"
+            if normalized_candidate is not None:
+                duplicate_label = f"{duplicate_label} {normalized_candidate}"
             raise SystemExit(
-                f"lucid.ignore.json suppression {index} duplicates rule/path: "
-                f"{rule} {normalized_path}"
+                f"lucid.ignore.json suppression {index} duplicates rule/path/candidate: "
+                f"{duplicate_label}"
             )
         seen.add(key)
-        validated.append(
-            {
-                "rule": rule,
-                "path": normalized_path,
-                "reason": reason.strip(),
-            }
-        )
+        item = {
+            "rule": rule,
+            "path": normalized_path,
+            "reason": reason.strip(),
+        }
+        if normalized_candidate is not None:
+            item["candidate"] = normalized_candidate
+        validated.append(item)
     return validated
 
 
@@ -1516,17 +1531,64 @@ def rule_source_of_truth_drift(
     return findings
 
 
+def finding_candidates(finding: dict[str, Any]) -> set[str]:
+    provenance = finding.get("provenance")
+    if not isinstance(provenance, dict):
+        return set()
+    signals = provenance.get("signals")
+    if not isinstance(signals, list):
+        return set()
+    candidates: set[str] = set()
+    for signal in signals:
+        if isinstance(signal, dict) and isinstance(signal.get("candidate"), str):
+            candidates.add(signal["candidate"])
+    return candidates
+
+
+def finding_matches_suppression(
+    finding: dict[str, Any], suppression: dict[str, str]
+) -> bool:
+    if finding["rule"] != suppression["rule"] or finding["path"] != suppression["path"]:
+        return False
+    candidate = suppression.get("candidate")
+    if candidate is None:
+        return True
+    return candidate in finding_candidates(finding)
+
+
 def apply_suppressions(
     findings: list[dict[str, Any]], suppressions: list[dict[str, str]]
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if not suppressions:
         return findings, []
 
-    suppression_lookup = {(item["rule"], item["path"]): item for item in suppressions}
+    suppression_lookup: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for item in suppressions:
+        suppression_lookup.setdefault((item["rule"], item["path"]), []).append(item)
+
     active: list[dict[str, Any]] = []
     suppressed: list[dict[str, Any]] = []
     for finding in findings:
-        suppression = suppression_lookup.get((finding["rule"], finding["path"]))
+        candidates = suppression_lookup.get((finding["rule"], finding["path"]), [])
+        specific = next(
+            (
+                item
+                for item in candidates
+                if item.get("candidate") is not None
+                and finding_matches_suppression(finding, item)
+            ),
+            None,
+        )
+        broad = next(
+            (
+                item
+                for item in candidates
+                if item.get("candidate") is None
+                and finding_matches_suppression(finding, item)
+            ),
+            None,
+        )
+        suppression = specific or broad
         if suppression is None:
             active.append(finding)
             continue
