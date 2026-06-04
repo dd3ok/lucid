@@ -262,6 +262,12 @@ at the target repository root:
       "rule": "stale-context",
       "path": "AGENTS.md",
       "reason": "Known duplicate retained for compatibility guidance."
+    },
+    {
+      "rule": "stale-reference",
+      "path": "README.md",
+      "candidate": "lucid/SKILL.md",
+      "reason": "Intentional package archive path."
     }
   ]
 }
@@ -269,6 +275,10 @@ at the target repository root:
 
 Suppressions match exact `rule` and repository-relative `path` values from audit
 findings. `reason` is required so ignored context debt remains accountable.
+For `stale-reference`, optional `candidate` narrows a suppression to one missing
+reference candidate from the finding provenance, so a reviewed false positive
+can be removed from active results without hiding other missing references in
+the same file.
 Suppressed findings are removed from active `findings` and plan actions, counted
 under `summary.suppressed`, and exposed in `suppressed_findings`.
 `plan --audit` trusts the provided audit payload; `lucid.ignore.json` applies

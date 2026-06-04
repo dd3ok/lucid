@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "suppressions": [
+    {
+      "rule": "stale-reference",
+      "path": "README.md",
+      "candidate": "lucid/SKILL.md",
+      "reason": "Intentional package archive path retained for documentation."
+    }
+  ]
+}
