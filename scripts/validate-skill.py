@@ -332,6 +332,25 @@ def main() -> int:
         if not (REFERENCES / name).exists():
             fail(f"missing reference {name}")
 
+    skill_text = SKILL.read_text(encoding="utf-8")
+    required_skill_pointers = [
+        "memory-retention-rubric.md",
+        "compatibility-safety.md",
+        "negative-residue.md",
+    ]
+    for name in required_skill_pointers:
+        if name not in skill_text:
+            fail(f"SKILL.md must keep safety reference pointer: {name}")
+    reference_routing_terms = [
+        "memory cleanup",
+        "old-looking compatibility-field removal",
+        "negative-warning cleanup",
+        "respectively",
+    ]
+    for term in reference_routing_terms:
+        if term not in skill_text:
+            fail(f"SKILL.md safety reference routing missing term: {term}")
+
     corpus = "\n".join(
         path.read_text(encoding="utf-8")
         for path in [SKILL, ROOT / "AGENTS.md", ROOT / "README.md"]

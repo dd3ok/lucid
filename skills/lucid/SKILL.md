@@ -76,6 +76,7 @@ Do not preserve obsolete names in user-facing context merely to forbid them.
 Prefer source-of-truth pointers, validators, or evals over natural-language
 warnings.
 
-Before memory, compatibility, or negative-warning cleanup, read
-`references/memory-retention-rubric.md`, `references/compatibility-safety.md`,
-or `references/negative-residue.md`.
+Before memory cleanup, old-looking compatibility-field removal, or
+negative-warning cleanup, read `references/memory-retention-rubric.md`,
+`references/compatibility-safety.md`, or `references/negative-residue.md`,
+respectively.

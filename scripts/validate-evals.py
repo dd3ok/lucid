@@ -53,6 +53,17 @@ def has_match(findings: list[dict[str, object]], expected: dict[str, str]) -> bo
     return False
 
 
+def assert_no_internal_keys(value: object, label: str) -> None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if str(key).startswith("_"):
+                fail(f"{label} exposed internal key: {key}")
+            assert_no_internal_keys(child, label)
+    elif isinstance(value, list):
+        for child in value:
+            assert_no_internal_keys(child, label)
+
+
 def skill_description() -> str:
     text = SKILL_MD.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
@@ -244,11 +255,24 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
 
     fixture = ROOT / "fixtures" / "policy-pack-claude"
     scan = lucid.scan(fixture, output_format="json")
-    if any(
-        any(str(key).startswith("_") for key in item)
-        for item in scan.get("files", [])
-    ):
-        fail("scan output exposed internal cached text")
+    assert_no_internal_keys(scan, "direct scan output")
+    scan_json = lucid.render_json(scan)
+    if "_text" in scan_json or "Use this fixture skill" in scan_json:
+        fail("render_json(scan) exposed internal cached text")
+    terminal_scan = lucid.render_terminal_scan(scan)
+    if "_text" in terminal_scan or "Use this fixture skill" in terminal_scan:
+        fail("terminal scan output exposed internal cached text")
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        exit_code = lucid.main(
+            ["scan", "--root", str(fixture), "--format", "json"]
+        )
+    if exit_code != 0:
+        fail("scan CLI returned non-zero exit code")
+    cli_scan_text = stdout.getvalue()
+    if "_text" in cli_scan_text or "Use this fixture skill" in cli_scan_text:
+        fail("scan CLI JSON exposed internal cached text")
+    assert_no_internal_keys(json.loads(cli_scan_text), "scan CLI JSON")
     paths = {item.get("path") for item in scan.get("files", [])}
     if ".claude/skills/reviewer/SKILL.md" not in paths:
         fail("claude policy pack did not include .claude skill surface")
@@ -271,11 +295,22 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
             }
         },
     )
-    duplicate_scan = lucid.scan(
-        ROOT / "fixtures" / "clean-project",
-        output_format="json",
-        config=duplicate_surface_config,
-    )
+    glob_calls: list[str] = []
+    original_glob = Path.glob
+
+    def counted_glob(self: Path, pattern: str):
+        glob_calls.append(pattern)
+        return original_glob(self, pattern)
+
+    Path.glob = counted_glob
+    try:
+        duplicate_scan = lucid.scan(
+            ROOT / "fixtures" / "clean-project",
+            output_format="json",
+            config=duplicate_surface_config,
+        )
+    finally:
+        Path.glob = original_glob
     single_scan = lucid.scan(
         ROOT / "fixtures" / "clean-project",
         output_format="json",
@@ -283,6 +318,14 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
     )
     if duplicate_scan["files"] != single_scan["files"]:
         fail("duplicate surface globs changed scan output")
+    if glob_calls.count("skills/*/SKILL.md") != 1:
+        fail("duplicate exact glob was expanded more than once")
+    duplicate_by_path = {
+        item.get("path"): item.get("category")
+        for item in duplicate_scan.get("files", [])
+    }
+    if duplicate_by_path.get("skills/lucid/SKILL.md") != "skill":
+        fail("duplicate surface glob changed first-match category")
 
     hermes_fixture = ROOT / "fixtures" / "policy-pack-hermes"
     hermes_scan = lucid.scan(hermes_fixture, output_format="json")
@@ -333,6 +376,28 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
     if missing_codex_plugin_paths:
         fail(f"codex policy pack missed surfaces: {missing_codex_plugin_paths}")
 
+    openclaw_fixture = ROOT / "fixtures" / "policy-pack-openclaw"
+    openclaw_scan = lucid.scan(openclaw_fixture, output_format="json")
+    openclaw_paths = {item.get("path") for item in openclaw_scan.get("files", [])}
+    expected_openclaw_paths = {
+        ".openclaw/skills/reviewer/SKILL.md",
+        ".openclaw/skills/reviewer/references/guide.md",
+        "skills/reviewer/SKILL.md",
+        "skills/reviewer/references/guide.md",
+    }
+    missing_openclaw_paths = sorted(expected_openclaw_paths - openclaw_paths)
+    if missing_openclaw_paths:
+        fail(f"openclaw policy pack missed surfaces: {missing_openclaw_paths}")
+    if openclaw_scan["files_scanned"] != len(expected_openclaw_paths):
+        fail("openclaw policy pack scanned unexpected duplicate surfaces")
+    openclaw_config = lucid.deep_merge(
+        lucid.DEFAULT_CONFIG, lucid.BUILT_IN_POLICY_PACKS["openclaw"]
+    )
+    openclaw_skill_patterns = openclaw_config["surfaces"]["skill"]
+    for pattern in ["skills/*/SKILL.md", "skills/*/references/**/*.md"]:
+        if openclaw_skill_patterns.count(pattern) != 1:
+            fail(f"openclaw policy pack should include {pattern} exactly once")
+
     invalid_fixture = ROOT / "fixtures" / "invalid-policy-pack"
     try:
         lucid.scan(invalid_fixture, output_format="json")
@@ -341,6 +406,62 @@ def validate_policy_pack_loading(lucid: ModuleType) -> None:
             fail("unknown policy pack error did not identify pack name")
     else:
         fail("unknown policy pack was accepted")
+
+
+def validate_audit_reuses_discovered_text(lucid: ModuleType) -> None:
+    fixture = ROOT / "fixtures" / "clean-project"
+    original_read_text_safely = lucid.read_text_safely
+    calls: list[Path] = []
+
+    def counted_read_text_safely(path: Path) -> str | None:
+        calls.append(path)
+        return original_read_text_safely(path)
+
+    lucid.read_text_safely = counted_read_text_safely
+    try:
+        audit = lucid.audit(fixture, output_format="json")
+    finally:
+        lucid.read_text_safely = original_read_text_safely
+
+    if len(calls) != audit["files_scanned"]:
+        fail(
+            "audit reread discovered files: "
+            f"{len(calls)} reads for {audit['files_scanned']} scanned files"
+        )
+
+    equivalence_fixture = ROOT / "fixtures" / "source-of-truth-near-duplicate"
+    cached_audit = lucid.audit(equivalence_fixture, output_format="json")
+    original_discover_context_surfaces = lucid.discover_context_surfaces
+
+    def discover_without_cached_text(
+        root: Path,
+        config: dict[str, object],
+        *,
+        include_text: bool = False,
+    ) -> list[dict[str, object]]:
+        discovered = original_discover_context_surfaces(
+            root,
+            config,
+            include_text=include_text,
+        )
+        for item in discovered:
+            item.pop("_text", None)
+        return discovered
+
+    lucid.discover_context_surfaces = discover_without_cached_text
+    try:
+        fallback_audit = lucid.audit(equivalence_fixture, output_format="json")
+    finally:
+        lucid.discover_context_surfaces = original_discover_context_surfaces
+
+    normalized_cached_audit = dict(cached_audit)
+    normalized_fallback_audit = dict(fallback_audit)
+    normalized_cached_audit.pop("generated_at", None)
+    normalized_fallback_audit.pop("generated_at", None)
+    if normalized_cached_audit != normalized_fallback_audit:
+        fail("audit cached-text path changed fallback audit output")
+    if '"_text"' in json.dumps(cached_audit, ensure_ascii=False):
+        fail("audit output exposed internal cached text")
 
 
 def validate_hermes_reference_parsing(lucid: ModuleType) -> None:
@@ -1282,6 +1403,7 @@ def main() -> int:
     validate_explicit_config_path(lucid)
     validate_config_schema_validation(lucid)
     validate_policy_pack_loading(lucid)
+    validate_audit_reuses_discovered_text(lucid)
     validate_hermes_reference_parsing(lucid)
     validate_hermes_obsolete_identifier(lucid)
     validate_source_graph(lucid)

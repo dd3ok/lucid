@@ -8,6 +8,7 @@ import sys
 import zipfile
 from types import ModuleType
 from pathlib import Path
+from collections.abc import Callable
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -152,27 +153,41 @@ def validate_openai_hosted_archive(names: set[str]) -> None:
 def validate_openai_hosted_fixed_root(package_module: ModuleType) -> None:
     staged_skill = ROOT / ".lucid" / "package-validation" / "staged-lucid"
     staged_skill.mkdir(parents=True, exist_ok=True)
-    (staged_skill / "SKILL.md").write_text("---\nname: lucid\n---\n", encoding="utf-8")
+    for entry in REQUIRED_ENTRIES:
+        target = staged_skill / entry
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if entry == "SKILL.md":
+            target.write_text("---\nname: lucid\n---\n", encoding="utf-8")
+        else:
+            target.write_text(f"{entry}\n", encoding="utf-8")
     output = ROOT / "dist" / "openai" / "staged-lucid.zip"
     package_module.package_skill(staged_skill, output, target="openai-hosted")
     with zipfile.ZipFile(output) as archive:
         names = set(archive.namelist())
+        for name in names:
+            validate_member(name, package_root="lucid")
+    validate_openai_hosted_archive(names)
+    expected_names = {f"lucid/{entry}" for entry in REQUIRED_ENTRIES}
+    if names != expected_names:
+        fail("openai-hosted staged archive included unexpected entries")
     if "lucid/SKILL.md" not in names:
         fail("openai-hosted target did not use fixed lucid/ top-level folder")
     if "staged-lucid/SKILL.md" in names:
         fail("openai-hosted target used source directory name as top-level folder")
 
 
-def validate_package_cli(package_module: ModuleType) -> None:
+def validate_package_cli(
+    package_module: ModuleType,
+    args: list[str],
+    output: Path,
+    *,
+    package_root: str | None,
+    archive_validator: Callable[[set[str]], None],
+) -> None:
     original_argv = sys.argv[:]
-    sys.argv = [
-        str(PACKAGE_SCRIPT),
-        "--target",
-        "openai-hosted",
-        "--out",
-        str(OPENAI_HOSTED_ZIP),
-    ]
+    sys.argv = [str(PACKAGE_SCRIPT), *args]
     stdout = io.StringIO()
+    previous_mtime_ns = output.stat().st_mtime_ns if output.exists() else None
     try:
         with contextlib.redirect_stdout(stdout):
             package_module.main()
@@ -183,13 +198,35 @@ def validate_package_cli(package_module: ModuleType) -> None:
         )
     finally:
         sys.argv = original_argv
-    if not OPENAI_HOSTED_ZIP.exists():
-        fail("package-skill CLI did not create dist/openai/lucid.zip")
-    with zipfile.ZipFile(OPENAI_HOSTED_ZIP) as archive:
+    expected_output = str(output.relative_to(ROOT))
+    if expected_output not in stdout.getvalue():
+        fail(f"package-skill CLI did not report output path {expected_output}")
+    if not output.exists():
+        fail(f"package-skill CLI did not create {output.relative_to(ROOT)}")
+    if (
+        previous_mtime_ns is not None
+        and output.stat().st_mtime_ns <= previous_mtime_ns
+    ):
+        fail(f"package-skill CLI did not refresh {output.relative_to(ROOT)}")
+    with zipfile.ZipFile(output) as archive:
         names = set(archive.namelist())
         for name in names:
-            validate_member(name, package_root="lucid")
-        validate_openai_hosted_archive(names)
+            validate_member(name, package_root=package_root)
+        archive_validator(names)
+
+
+def validate_archive_byte_parity() -> None:
+    with zipfile.ZipFile(DIST_ZIP) as raw_archive, zipfile.ZipFile(
+        OPENAI_HOSTED_ZIP
+    ) as hosted_archive:
+        for entry in REQUIRED_ENTRIES:
+            source_bytes = (ROOT / "skills" / "lucid" / entry).read_bytes()
+            raw_bytes = raw_archive.read(entry)
+            hosted_bytes = hosted_archive.read(f"lucid/{entry}")
+            if raw_bytes != source_bytes:
+                fail(f"raw-local archive changed bytes for {entry}")
+            if hosted_bytes != source_bytes:
+                fail(f"openai-hosted archive changed bytes for {entry}")
 
 
 def main() -> None:
@@ -199,7 +236,21 @@ def main() -> None:
     package_module = load_package_module()
     validate_package_filters(package_module)
     validate_openai_hosted_fixed_root(package_module)
-    validate_package_cli(package_module)
+    validate_package_cli(
+        package_module,
+        [],
+        DIST_ZIP,
+        package_root=None,
+        archive_validator=validate_raw_local_archive,
+    )
+    validate_package_cli(
+        package_module,
+        ["--target", "openai-hosted", "--out", str(OPENAI_HOSTED_ZIP)],
+        OPENAI_HOSTED_ZIP,
+        package_root="lucid",
+        archive_validator=validate_openai_hosted_archive,
+    )
+    validate_archive_byte_parity()
     expect_failure(
         "forbidden path under openai-hosted package root",
         lambda: validate_member("lucid/docs/extra.md", package_root="lucid"),
@@ -242,17 +293,6 @@ def main() -> None:
             DIST_ZIP,
         ),
     )
-    package_module.package_skill(package_module.DEFAULT_SKILL_DIR, DIST_ZIP)
-
-    if not DIST_ZIP.exists():
-        fail("dist/lucid-skill.zip was not created")
-
-    with zipfile.ZipFile(DIST_ZIP) as archive:
-        names = set(archive.namelist())
-        for name in names:
-            validate_member(name)
-        validate_raw_local_archive(names)
-
     print("validate-package-skill: ok")
 
 
