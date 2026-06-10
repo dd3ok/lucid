@@ -226,11 +226,63 @@ def validate_config_schema_validation(lucid: ModuleType) -> None:
 
 
 def validate_policy_pack_loading(lucid: ModuleType) -> None:
+    for pack_name, overlay in lucid.BUILT_IN_POLICY_PACKS.items():
+        config = lucid.deep_merge(lucid.DEFAULT_CONFIG, overlay)
+        for category, patterns in config["surfaces"].items():
+            duplicates = sorted(
+                {
+                    pattern
+                    for pattern in patterns
+                    if patterns.count(pattern) > 1
+                }
+            )
+            if duplicates:
+                fail(
+                    f"{pack_name} policy pack has duplicate {category} surfaces: "
+                    + ", ".join(duplicates)
+                )
+
     fixture = ROOT / "fixtures" / "policy-pack-claude"
     scan = lucid.scan(fixture, output_format="json")
+    if any(
+        any(str(key).startswith("_") for key in item)
+        for item in scan.get("files", [])
+    ):
+        fail("scan output exposed internal cached text")
     paths = {item.get("path") for item in scan.get("files", [])}
     if ".claude/skills/reviewer/SKILL.md" not in paths:
         fail("claude policy pack did not include .claude skill surface")
+
+    duplicate_surface_config = lucid.deep_merge(
+        lucid.DEFAULT_CONFIG,
+        {
+            "surfaces": {
+                "always_loaded": ["AGENTS.md", "AGENTS.md"],
+                "skill": ["skills/*/SKILL.md", "skills/*/SKILL.md"],
+            }
+        },
+    )
+    single_surface_config = lucid.deep_merge(
+        lucid.DEFAULT_CONFIG,
+        {
+            "surfaces": {
+                "always_loaded": ["AGENTS.md"],
+                "skill": ["skills/*/SKILL.md"],
+            }
+        },
+    )
+    duplicate_scan = lucid.scan(
+        ROOT / "fixtures" / "clean-project",
+        output_format="json",
+        config=duplicate_surface_config,
+    )
+    single_scan = lucid.scan(
+        ROOT / "fixtures" / "clean-project",
+        output_format="json",
+        config=single_surface_config,
+    )
+    if duplicate_scan["files"] != single_scan["files"]:
+        fail("duplicate surface globs changed scan output")
 
     hermes_fixture = ROOT / "fixtures" / "policy-pack-hermes"
     hermes_scan = lucid.scan(hermes_fixture, output_format="json")

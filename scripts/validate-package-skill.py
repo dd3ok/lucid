@@ -14,7 +14,6 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_SCRIPT = ROOT / "scripts" / "package-skill.py"
 DIST_ZIP = ROOT / "dist" / "lucid-skill.zip"
 OPENAI_HOSTED_ZIP = ROOT / "dist" / "openai" / "lucid.zip"
-OPENAI_HOSTED_CLI_ZIP = ROOT / "dist" / "openai" / "cli-lucid.zip"
 
 REQUIRED_ENTRIES = {
     "SKILL.md",
@@ -171,7 +170,7 @@ def validate_package_cli(package_module: ModuleType) -> None:
         "--target",
         "openai-hosted",
         "--out",
-        str(OPENAI_HOSTED_CLI_ZIP),
+        str(OPENAI_HOSTED_ZIP),
     ]
     stdout = io.StringIO()
     try:
@@ -184,9 +183,9 @@ def validate_package_cli(package_module: ModuleType) -> None:
         )
     finally:
         sys.argv = original_argv
-    if not OPENAI_HOSTED_CLI_ZIP.exists():
-        fail("package-skill CLI did not create dist/openai/cli-lucid.zip")
-    with zipfile.ZipFile(OPENAI_HOSTED_CLI_ZIP) as archive:
+    if not OPENAI_HOSTED_ZIP.exists():
+        fail("package-skill CLI did not create dist/openai/lucid.zip")
+    with zipfile.ZipFile(OPENAI_HOSTED_ZIP) as archive:
         names = set(archive.namelist())
         for name in names:
             validate_member(name, package_root="lucid")
@@ -244,28 +243,15 @@ def main() -> None:
         ),
     )
     package_module.package_skill(package_module.DEFAULT_SKILL_DIR, DIST_ZIP)
-    package_module.package_skill(
-        package_module.DEFAULT_SKILL_DIR,
-        OPENAI_HOSTED_ZIP,
-        target="openai-hosted",
-    )
 
     if not DIST_ZIP.exists():
         fail("dist/lucid-skill.zip was not created")
-    if not OPENAI_HOSTED_ZIP.exists():
-        fail("dist/openai/lucid.zip was not created")
 
     with zipfile.ZipFile(DIST_ZIP) as archive:
         names = set(archive.namelist())
         for name in names:
             validate_member(name)
         validate_raw_local_archive(names)
-
-    with zipfile.ZipFile(OPENAI_HOSTED_ZIP) as archive:
-        names = set(archive.namelist())
-        for name in names:
-            validate_member(name, package_root="lucid")
-        validate_openai_hosted_archive(names)
 
     print("validate-package-skill: ok")
 
