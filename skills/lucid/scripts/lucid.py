@@ -133,6 +133,7 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
             ".codex/skills/*/references/**/*.md",
             ".agents/skills/*/SKILL.md",
             ".agents/skills/*/references/**/*.md",
+            ".agents/skills/*/agents/openai.yaml",
             ".agents/plugins/marketplace.json",
             ".codex-plugin/plugin.json",
             ".mcp.json",
@@ -163,11 +164,17 @@ BUILT_IN_POLICY_PACKS: dict[str, dict[str, Any]] = {
         skill=[
             ".openclaw/skills/*/SKILL.md",
             ".openclaw/skills/*/references/**/*.md",
-            "skills/*/SKILL.md",
-            "skills/*/references/**/*.md",
         ],
     ),
     "hermes": surface_overlay(
+        always_loaded=[
+            "memories/MEMORY.md",
+            "memories/USER.md",
+            ".hermes/SOUL.md",
+            ".hermes/AGENTS.md",
+            ".hermes/memories/MEMORY.md",
+            ".hermes/memories/USER.md",
+        ],
         skill=[
             ".hermes/skills/*/SKILL.md",
             ".hermes/skills/*/references/**/*.md",
@@ -631,11 +638,20 @@ def estimate_tokens(text: str) -> int:
     return max(1, int(len(text) / 4))
 
 
-def discover_context_surfaces(root: Path, config: dict[str, Any]) -> list[dict[str, Any]]:
+def discover_context_surfaces(
+    root: Path,
+    config: dict[str, Any],
+    *,
+    include_text: bool = False,
+) -> list[dict[str, Any]]:
     found: dict[Path, str] = {}
+    seen_patterns: set[str] = set()
     surfaces = config["surfaces"]
     for category, patterns in surfaces.items():
         for pattern in patterns:
+            if pattern in seen_patterns:
+                continue
+            seen_patterns.add(pattern)
             if has_glob_magic(pattern):
                 candidates = root.glob(pattern)
             else:
@@ -649,15 +665,16 @@ def discover_context_surfaces(root: Path, config: dict[str, Any]) -> list[dict[s
         text = read_text_safely(path)
         if text is None:
             continue
-        files.append(
-            {
-                "path": relpath(path, root),
-                "category": category,
-                "lines": len(text.splitlines()),
-                "estimated_tokens": estimate_tokens(text),
-                "bytes": path.stat().st_size,
-            }
-        )
+        file_info = {
+            "path": relpath(path, root),
+            "category": category,
+            "lines": len(text.splitlines()),
+            "estimated_tokens": estimate_tokens(text),
+            "bytes": path.stat().st_size,
+        }
+        if include_text:
+            file_info["_text"] = text
+        files.append(file_info)
     return files
 
 
@@ -1606,15 +1623,17 @@ def audit(
     root_path = Path(root).resolve()
     config = load_config(root_path, config_path)
     suppressions = load_ignore_suppressions(root_path)
-    scan_result = scan(root_path, output_format=output_format, config=config)
+    scan_files = discover_context_surfaces(root_path, config, include_text=True)
     findings: list[dict[str, Any]] = []
     file_texts: list[dict[str, Any]] = []
 
-    for file_info in scan_result["files"]:
-        path = root_path / file_info["path"]
-        text = read_text_safely(path)
-        if text is None:
-            continue
+    for file_info in scan_files:
+        text = file_info.get("_text")
+        if not isinstance(text, str):
+            path = root_path / file_info["path"]
+            text = read_text_safely(path)
+            if text is None:
+                continue
         lines = text.splitlines()
         file_texts.append({"path": file_info["path"], "text": text})
 
@@ -1649,7 +1668,7 @@ def audit(
         "version": VERSION,
         "root": str(root_path),
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "files_scanned": scan_result["files_scanned"],
+        "files_scanned": len(scan_files),
         "source_graph": build_source_graph(root_path, file_texts),
         "findings": active_findings,
         "suppressed_findings": suppressed_findings,

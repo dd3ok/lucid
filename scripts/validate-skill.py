@@ -145,6 +145,83 @@ def validate_openclaw_metadata_regressions() -> None:
     )
 
 
+def validate_lucid_openclaw_runtime_metadata(fields: dict[str, str]) -> None:
+    raw = fields.get("metadata")
+    if raw is None:
+        fail("Lucid SKILL.md must declare OpenClaw runtime metadata")
+    metadata = json.loads(raw)
+    if not isinstance(metadata, dict):
+        fail("Lucid OpenClaw metadata must be a JSON object")
+
+    openclaw = metadata.get("openclaw") or {}
+    if not isinstance(openclaw, dict):
+        fail("Lucid OpenClaw metadata.openclaw must be an object")
+
+    requires = openclaw.get("requires") or {}
+    if not isinstance(requires, dict):
+        fail("Lucid OpenClaw metadata.openclaw.requires must be an object")
+
+    any_bins = requires.get("anyBins")
+    if any_bins != ["python3", "python"]:
+        fail('Lucid OpenClaw metadata must use anyBins ["python3", "python"]')
+    if "bins" in requires:
+        fail("Lucid OpenClaw metadata must not require only python3")
+
+
+def expect_lucid_openclaw_runtime_metadata_failure(
+    fields: dict[str, str], expected: str
+) -> None:
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            validate_lucid_openclaw_runtime_metadata(fields)
+    except SystemExit:
+        return
+    fail(f"Lucid OpenClaw runtime metadata regression was accepted: {expected}")
+
+
+def validate_lucid_openclaw_runtime_metadata_regressions() -> None:
+    expect_lucid_openclaw_runtime_metadata_failure(
+        {"metadata": "null"},
+        "metadata null",
+    )
+    expect_lucid_openclaw_runtime_metadata_failure(
+        {"metadata": '{"openclaw":null}'},
+        "openclaw null",
+    )
+    expect_lucid_openclaw_runtime_metadata_failure(
+        {"metadata": '{"openclaw":{"requires":null}}'},
+        "requires null",
+    )
+
+
+def validate_description_quality(description: str) -> None:
+    if len(description) > 420:
+        fail("frontmatter description exceeds Lucid 420 character trigger budget")
+    mojibake_markers = ["�", "怨", "吏", "?ㅻ", "?붿"]
+    if any(marker in description for marker in mojibake_markers):
+        fail("frontmatter description contains mojibake markers")
+    required_start = (
+        "Audits stale, unsafe, contradictory, or bloated agent-facing context "
+        "and produces cleanup plans."
+    )
+    if not description.startswith(required_start):
+        fail("frontmatter description must front-load Lucid's core trigger")
+    required_terms = [
+        "prompt debt",
+        "프롬프트 부채",
+        "컨텍스트 정리",
+        "obsolete agent instructions",
+        "memory cleanup",
+        "source-of-truth drift",
+        "skill descriptions",
+        "Do not use",
+        "general code refactors",
+    ]
+    for term in required_terms:
+        if term not in description:
+            fail(f"frontmatter description missing trigger/boundary term: {term}")
+
+
 def validate_openai_yaml() -> None:
     if not OPENAI_YAML.exists():
         fail("skills/lucid/agents/openai.yaml is missing")
@@ -190,6 +267,14 @@ def validate_openai_yaml() -> None:
     short_description = values["short_description"]
     if not 25 <= len(short_description) <= 64:
         fail("agents/openai.yaml interface.short_description must be 25-64 chars")
+    lowered_short_description = short_description.lower()
+    if "context" not in lowered_short_description or not (
+        "cleanup" in lowered_short_description or "prompt debt" in lowered_short_description
+    ):
+        fail(
+            "agents/openai.yaml interface.short_description must mention "
+            "context and cleanup or prompt debt"
+        )
     if "$lucid" not in values["default_prompt"]:
         fail("agents/openai.yaml interface.default_prompt must mention $lucid")
 
@@ -224,10 +309,13 @@ def main() -> int:
         fail("frontmatter description is missing")
     if len(description) > 1024:
         fail("frontmatter description exceeds 1024 characters")
+    validate_description_quality(description)
     if len(text.splitlines()) > 120:
         fail("SKILL.md exceeds 120 lines")
     validate_openclaw_metadata(fields, frontmatter)
     validate_openclaw_metadata_regressions()
+    validate_lucid_openclaw_runtime_metadata(fields)
+    validate_lucid_openclaw_runtime_metadata_regressions()
     validate_openai_yaml()
 
     required_refs = [
@@ -243,6 +331,25 @@ def main() -> int:
     for name in required_refs:
         if not (REFERENCES / name).exists():
             fail(f"missing reference {name}")
+
+    skill_text = SKILL.read_text(encoding="utf-8")
+    required_skill_pointers = [
+        "memory-retention-rubric.md",
+        "compatibility-safety.md",
+        "negative-residue.md",
+    ]
+    for name in required_skill_pointers:
+        if name not in skill_text:
+            fail(f"SKILL.md must keep safety reference pointer: {name}")
+    reference_routing_terms = [
+        "memory cleanup",
+        "old-looking compatibility-field removal",
+        "negative-warning cleanup",
+        "respectively",
+    ]
+    for term in reference_routing_terms:
+        if term not in skill_text:
+            fail(f"SKILL.md safety reference routing missing term: {term}")
 
     corpus = "\n".join(
         path.read_text(encoding="utf-8")

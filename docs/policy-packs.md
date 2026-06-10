@@ -130,7 +130,9 @@ alias awareness.
 
 `hermes` adds `~/.hermes/skills` style skill layouts on top of the default
 Hermes-aware context surfaces: `<repo>/.hermes.md`, `HERMES.md`,
-`.cursorrules`, and conditional `.cursor/rules/*.mdc` docs.
+`.cursorrules`, conditional `.cursor/rules/*.mdc` docs, SOUL.md, AGENTS.md,
+memories/MEMORY.md, memories/USER.md, and Hermes skill layouts under a source
+tree.
 
 `openclaw` tunes workspace `skills/`, `.openclaw/skills`, and OpenClaw
 metadata constraints.

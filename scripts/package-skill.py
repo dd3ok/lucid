@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SKILL_DIR = ROOT / "skills" / "lucid"
 DEFAULT_OUTPUT = ROOT / "dist" / "lucid-skill.zip"
 DEFAULT_OPENAI_HOSTED_OUTPUT = ROOT / "dist" / "openai" / "lucid.zip"
+OPENAI_HOSTED_ROOT = "lucid"
 PACKAGE_TARGETS = {"raw-local", "openai-hosted"}
 
 EXCLUDED_NAMES = {
@@ -92,7 +93,7 @@ def validate_target(target: str) -> str:
 def archive_name_for(path: Path, skill_dir: Path, target: str) -> str:
     relative_path = path.relative_to(skill_dir).as_posix()
     if target == "openai-hosted":
-        return f"{skill_dir.name}/{relative_path}"
+        return f"{OPENAI_HOSTED_ROOT}/{relative_path}"
     return relative_path
 
 

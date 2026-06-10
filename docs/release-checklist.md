@@ -8,6 +8,7 @@
 - [ ] `python3 scripts/validate-evals.py`
 - [ ] `python3 scripts/validate-docs.py`
 - [ ] `python3 scripts/validate-package-skill.py`
+- [ ] `python3 scripts/package-skill.py --target openai-hosted --out dist/openai/lucid.zip`
 - [ ] `python3 lucid.py verify --root . --strict`
 - [ ] `python3 lucid.py audit --root . --format terminal`
 - [ ] `python3 lucid.py audit --root fixtures/unsafe-context --format sarif --out .lucid/audit.sarif`

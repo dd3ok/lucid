@@ -129,6 +129,10 @@ or `~/.openclaw/skills` are not included in a repository audit unless you
 audit a parent root that contains those runtime directories or vendor the skill
 into the target root.
 
+For Hermes migration audits, set `policy_pack` to `hermes`. The pack scans
+Hermes SOUL.md, AGENTS.md, memories/MEMORY.md, memories/USER.md, and Hermes
+skill surfaces inside the audited root.
+
 ## Quick Start
 
 From a target repository:
@@ -166,8 +170,8 @@ Stale-reference findings are root-scoped. Template paths such as
 `$HOME/.watchlist/WATCHLIST.md` are treated as intentional non-local
 references rather than missing repo files.
 
-Memory findings are retention review signals. A finding in `MEMORY.md` does not
-mean the memory should be removed automatically; decide whether it is still
+Memory findings are retention review signals. A finding in a memory file does
+not mean the memory should be removed automatically; decide whether it is still
 useful as durable context.
 
 For initial adoption, install Lucid in a single managed agent or runtime before
@@ -217,10 +221,8 @@ python3 scripts/package-skill.py --target openai-hosted --out dist/openai/lucid.
 ```
 
 The OpenAI hosted archive wraps the same skill files under a single top-level
-`lucid/` folder, so the zip contains `lucid/SKILL.md`,
-`lucid/scripts/lucid.py`, `lucid/references/`, and `lucid/agents/openai.yaml`.
-Keep this shape separate from the raw local archive, which intentionally keeps
-`SKILL.md` at the archive root.
+`lucid/` folder. Keep this shape separate from the raw local archive, which
+intentionally keeps `SKILL.md` at the archive root.
 
 ## Usage
 

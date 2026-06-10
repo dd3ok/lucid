@@ -147,6 +147,7 @@ def validate_policy_packs_doc() -> None:
         "add new rule engines",
         "This schema is a design contract for v0.3",
         "Built-in policy packs are loaded by setting `policy_pack`",
+        "Hermes",
         "Unknown pack names fail closed.",
         "Schema design.",
         "Config schema validation.",
