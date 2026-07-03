@@ -16,7 +16,7 @@
 - [ ] `git diff --check`
 - [ ] `CHANGELOG.md` has a dated release section.
 - [ ] `VERSION` in `skills/lucid/scripts/lucid.py` matches the release version.
-- [ ] `version` in `skills/lucid/SKILL.md` matches the release version.
+- [ ] `metadata.openclaw.version` in `skills/lucid/SKILL.md` matches the release version.
 - [ ] `LICENSE` file is present and contains the correct MIT license text.
 - [ ] `README.md` status matches the release state.
 - [ ] `SECURITY.md` still states the read-only, no-network, no-LLM, no env-read, and no auto-apply constraints.

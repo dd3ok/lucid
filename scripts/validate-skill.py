@@ -157,6 +157,10 @@ def validate_lucid_openclaw_runtime_metadata(fields: dict[str, str]) -> None:
     if not isinstance(openclaw, dict):
         fail("Lucid OpenClaw metadata.openclaw must be an object")
 
+    version = openclaw.get("version")
+    if not isinstance(version, str) or not version:
+        fail("Lucid OpenClaw metadata.openclaw.version must be a non-empty string")
+
     requires = openclaw.get("requires") or {}
     if not isinstance(requires, dict):
         fail("Lucid OpenClaw metadata.openclaw.requires must be an object")
@@ -166,6 +170,20 @@ def validate_lucid_openclaw_runtime_metadata(fields: dict[str, str]) -> None:
         fail('Lucid OpenClaw metadata must use anyBins ["python3", "python"]')
     if "bins" in requires:
         fail("Lucid OpenClaw metadata must not require only python3")
+
+
+def read_lucid_skill_metadata_version(fields: dict[str, str]) -> str:
+    raw = fields.get("metadata")
+    if raw is None:
+        fail("Lucid SKILL.md must declare OpenClaw runtime metadata")
+    metadata = json.loads(raw)
+    openclaw = metadata.get("openclaw") or {}
+    if not isinstance(openclaw, dict):
+        fail("Lucid OpenClaw metadata.openclaw must be an object")
+    version = openclaw.get("version")
+    if not isinstance(version, str) or not version:
+        fail("Lucid OpenClaw metadata.openclaw.version must be a non-empty string")
+    return version
 
 
 def expect_lucid_openclaw_runtime_metadata_failure(
@@ -191,6 +209,10 @@ def validate_lucid_openclaw_runtime_metadata_regressions() -> None:
     expect_lucid_openclaw_runtime_metadata_failure(
         {"metadata": '{"openclaw":{"requires":null}}'},
         "requires null",
+    )
+    expect_lucid_openclaw_runtime_metadata_failure(
+        {"metadata": '{"openclaw":{"requires":{"anyBins":["python3","python"]}}}'},
+        "missing version",
     )
 
 
@@ -299,9 +321,10 @@ def main() -> int:
     if fields.get("name") != "lucid":
         fail("frontmatter name must be lucid")
     script_version = read_lucid_script_version()
-    if fields.get("version") != script_version:
+    skill_version = read_lucid_skill_metadata_version(fields)
+    if skill_version != script_version:
         fail(
-            f"frontmatter version ({fields.get('version')}) must match "
+            f"metadata.openclaw.version ({skill_version}) must match "
             f"skills/lucid/scripts/lucid.py VERSION ({script_version})"
         )
     description = fields.get("description", "")

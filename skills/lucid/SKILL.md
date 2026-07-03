@@ -7,8 +7,7 @@ description: >
   descriptions, 프롬프트 부채, and 컨텍스트 정리. Do not use for ordinary
   README edits, general code refactors, linting, summarization, or creating a
   memory bank.
-version: 0.4.0
-metadata: {"openclaw":{"requires":{"anyBins":["python3","python"]}}}
+metadata: {"openclaw":{"version":"0.4.0","requires":{"anyBins":["python3","python"]}}}
 ---
 
 # Lucid
